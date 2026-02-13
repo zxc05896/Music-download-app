@@ -1,12 +1,14 @@
 buildscript {
-    ext.kotlin_version = '1.9.0'
+    ext.kotlin_version = '1.9.22' // تحديث لأحدث نسخة مستقرة في 2026
     repositories {
         google()
         mavenCentral()
     }
+
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
+        // استخدام إصدار متوافق جداً مع Gradle 8.11
+        classpath 'com.android.tools.build:gradle:8.2.1' 
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
@@ -15,4 +17,18 @@ allprojects {
         google()
         mavenCentral()
     }
+}
+
+// 🚀 إعدادات المسارات المتقدمة لتجنب أخطاء "Directory Not Found"
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+// تنظيف تلقائي للمجلدات عند كل Build جديد
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
 }
