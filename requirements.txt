@@ -9,12 +9,12 @@ gunicorn>=23.0.0
 yt-dlp[default]
 
 # Async Networking
-httpx>=0.28.0
-aiofiles>=24.1.0
-requests>=2.32.0
+httpx
+aiofiles
+requests
 
 # Server Utilities & Monitoring
-python-multipart>=0.0.12
-loguru>=0.8.0
-psutil>=6.1.0  # لمراقبة استهلاك الـ 100 جيجا رام
-uvloop>=0.21.0 # تسريع السيرفر 4 أضعاف (مهم جداً للينكس)
+python-multipart
+loguru
+psutil  # لمراقبة استهلاك الـ 100 جيجا رام
+uvloop # تسريع السيرفر 4 أضعاف (مهم جداً للينكس)
