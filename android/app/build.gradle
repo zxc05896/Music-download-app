@@ -1,21 +1,29 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
     localProperties.load(new FileInputStream(localPropertiesFile))
 }
-def flutterSdk = localProperties.getProperty('flutter.sdk') ?: System.getenv('FLUTTER_ROOT')
 
-if (flutterSdk == null) {
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
     throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties or FLUTTER_ROOT env var.")
 }
 
-apply from: "$flutterSdk/packages/flutter_tools/gradle/flutter.gradle"
+// 1. تطبيق الإضافات (Plugins)
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
+    // 2. الهوية (Namespace) - لازم يطابق الـ Package Name بتاعك
+    namespace "com.example.music_download_app"
     compileSdk 34
+
+    // 3. الربط مع ملفات فلاتر (الحل السحري)
+    // بما إن مجلد android في الـ Root، بنقوله اطلع خطوة واحدة لبره هتلاقي الـ pubspec.yaml
+    flutter {
+        source '..'
+    }
 
     defaultConfig {
         applicationId "com.example.music_download_app"
@@ -28,9 +36,10 @@ android {
 
     buildTypes {
         release {
-            // signConfig signingConfigs.release  // لو عندك keystore فعّلها
+            // لو محتاج تعمل Sign للتطبيق لاحقاً، التعديل هيكون هنا
             minifyEnabled false
             shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -40,12 +49,11 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = '17'
     }
-
-    namespace "com.example.music_download_app"
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext.kotlin_version}"
+    // 4. استدعاء لغة Kotlin بشكل صحيح ومستقر
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.0"
 }
