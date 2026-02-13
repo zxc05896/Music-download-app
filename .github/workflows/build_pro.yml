@@ -1,4 +1,4 @@
-name: 🚀 LiquidSnap Zero-Error Build
+name: 🚀 LiquidSnap Ultimate Build
 
 on:
   push:
@@ -11,34 +11,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. سحب الكود
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
+      # 2. إعداد جافا 17 (المتوافقة مع ملف build.gradle بتاعك)
       - name: ☕ Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
+      # 3. إعداد فلاتر
       - name: ⚡ Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           flutter-version: '3.19.0'
 
+      # 4. تنظيف وتثبيت المكتبات
+      # (هام: تأكد أن ملفاتك داخل مجلد frontend، لو نقلتها للرئيسية امسح working-directory)
       - name: 📦 Install & Clean Dependencies
         working-directory: ./frontend
         run: |
           flutter clean
           flutter pub get
-          flutter pub upgrade  # لتحديث المكتبات لأفضل نسخة متوافقة
 
+      # 5. بناء التطبيق (Release Mode)
+      # إلغاء الـ tree-shake-icons بيحل مشاكل اختفاء الأيقونات في بعض الموبايلات
       - name: 🛠️ Build APK (Release)
         working-directory: ./frontend
         run: flutter build apk --release --no-tree-shake-icons
 
+      # 6. الرفع النهائي
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: LiquidSnap-App
+          name: LiquidSnap-App-2026
           path: frontend/build/app/outputs/flutter-apk/app-release.apk
