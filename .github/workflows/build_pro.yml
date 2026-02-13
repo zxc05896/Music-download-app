@@ -1,71 +1,58 @@
-name: LiquidSnap_Master_Build
+name: 🚀 LiquidSnap Zero-Error Build
 
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً أيضا
+  workflow_dispatch: # زر التشغيل اليدوي
 
 jobs:
   build_apk:
-    name: 🏗️ Advanced Flutter Build
+    name: 🏗️ Build Android APK
     runs-on: ubuntu-latest
-    
-    # تحديد مجلد العمل لأن كود التطبيق داخل فولدر frontend
-    defaults:
-      run:
-        working-directory: ./frontend
 
     steps:
-      # 1. سحب الكود من GitHub
+      # 1. سحب الكود
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. إعداد جافا (نسخة 17 المستقرة لعام 2026)
+      # 2. إعداد جافا (بدون كاش لتجنب أخطاء المسارات)
       - name: ☕ Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-          cache: 'gradle'
+          # تم إزالة سطر cache: 'gradle' لأنه سبب المشكلة السابقة
 
-      # 3. إعداد فلاتر
+      # 3. إعداد فلاتر (النسخة المستقرة)
       - name: ⚡ Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true
+          flutter-version: '3.19.0' # تثبيت نسخة محددة لضمان الاستقرار
 
-      # 4. إصلاح المشاكل الشائعة تلقائياً (صورة الخلفية والمجلدات)
-      - name: 🛠️ Auto-Fix Environment
+      # 4. التأكد من وجود مجلد التطبيق (فحص أمان)
+      - name: 🔍 Verify Frontend Directory
         run: |
-          mkdir -p assets/images
-          if [ ! -f assets/images/background.jpg ]; then
-            touch assets/images/background.jpg
+          if [ ! -d "frontend" ]; then
+            echo "❌ Error: Folder 'frontend' not found!"
+            exit 1
           fi
+          echo "✅ Frontend folder found."
 
-      # 5. تحميل المكتبات
+      # 5. تحميل المكتبات (داخل مجلد frontend حصراً)
       - name: 📦 Install Dependencies
+        working-directory: ./frontend
         run: flutter pub get
 
-      # 6. بناء التطبيق (نسخة احترافية مشفرة ومضغوطة)
-      # --obfuscate: تمنع أي حد من سرقة كودك أو فكه
-      # --split-debug-info: تقلل حجم الـ APK بشكل ملحوظ
-      - name: 🛠️ Build Optimized APK
-        run: |
-          flutter build apk --release \
-            --obfuscate \
-            --split-debug-info=./debug-info \
-            --no-tree-shake-icons
+      # 6. بناء ملف APK (الأمر المباشر)
+      - name: 🛠️ Build APK (Release)
+        working-directory: ./frontend
+        run: flutter build apk --release
 
-      # 7. تحضير الملف النهائي للتحميل
-      - name: 🏷️ Prepare Artifact
-        run: |
-          mv build/app/outputs/flutter-apk/app-release.apk ../LiquidSnap_Ultra_2026.apk
-
-      # 8. الرفع النهائي (ستجده في تبويب Actions)
-      - name: 📤 Upload Production APK
+      # 7. الرفع النهائي (مسار الملف مضمون)
+      - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: LiquidSnap_Final_Build
-          path: LiquidSnap_Ultra_2026.apk
-          retention-days: 7 # الملف هيفضل متاح للتحميل لمدة أسبوع
+          name: LiquidSnap-App
+          path: frontend/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 5
