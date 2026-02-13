@@ -3,7 +3,7 @@ name: LiquidSnap_Master_Build
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً أيضاً
+  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً أيضا
 
 jobs:
   build_apk:
