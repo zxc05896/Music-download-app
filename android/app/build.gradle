@@ -1,0 +1,51 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
+def flutterSdk = localProperties.getProperty('flutter.sdk') ?: System.getenv('FLUTTER_ROOT')
+
+if (flutterSdk == null) {
+    throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties or FLUTTER_ROOT env var.")
+}
+
+apply from: "$flutterSdk/packages/flutter_tools/gradle/flutter.gradle"
+
+android {
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.music_download_app"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            // signConfig signingConfigs.release  // لو عندك keystore فعّلها
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    namespace "com.example.music_download_app"
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext.kotlin_version}"
+}
