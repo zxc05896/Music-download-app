@@ -1,27 +1,23 @@
 package com.example.music_download_app
 
-import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.plugins.GeneratedPluginRegistrant
 import android.os.Build
+import android.os.Bundle
 import android.view.WindowManager
+import io.flutter.embedding.android.FlutterActivity
 
-class MainActivity: FlutterActivity() {
+class MainActivity : FlutterActivity() {
 
-    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        super.configureFlutterEngine(flutterEngine)
-        
-        // 🚀 تفعيل تسجيل جميع الإضافات (Plugins) أوتوماتيكياً
-        GeneratedPluginRegistrant.registerWith(flutterEngine)
-    }
+    // ملاحظات:
+    // - مع Android Embedding V2 مافيش حاجة لازمة لـ GeneratedPluginRegistrant.registerWith
+    // - لو عندك plugins بتحتاج تسجيل خاص (مثل background isolates)، الافضل تنفيذها عبر FlutterPlugin APIs أو توكيلها على native side حسب توجيه كل plugin.
 
     override fun onResume() {
         super.onResume()
-        
-        // 💎 تفعيل وضع "السرعة القصوى" للرسوميات (Hardware Acceleration)
-        // هذا يجعل التنقل داخل التطبيق ناعماً جداً (120Hz Refresh Rate Support)
+
+        // تشغيل hardware acceleration / تعديل واجهة النوافذ بناءً على إصدار الـ Android
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.setDecorFitsSystemWindows(false) 
+            // API 30+: التحكم في الواجهة الحديثة
+            window.setDecorFitsSystemWindows(false)
         } else {
             @Suppress("DEPRECATION")
             window.setFlags(
