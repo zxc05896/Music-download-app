@@ -1,2 +1,18 @@
-rootProject.name = 'music_download_app'
 include ':app'
+
+def localPropertiesFile = new File(rootProject.projectDir, "local.properties")
+def properties = new Properties()
+
+assert localPropertiesFile.exists()
+localPropertiesFile.withInputStream { properties.load(it) }
+
+def flutterSdkPath = properties.getProperty("flutter.sdk")
+assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+
+// ==================================================================
+// 🚀 السطر السحري (The Magic Line)
+// ده السطر اللي كان ناقص وهو اللي بيحل مشكلة "Plugin not found"
+// ==================================================================
+apply from: "$flutterSdkPath/packages/flutter_tools/gradle/app_plugin_loader.gradle"
+
+rootProject.name = 'music_download_app'
