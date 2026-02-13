@@ -18,8 +18,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 // 1. CONFIGURATION (ربط التطبيق بالسيرفر)
 // -----------------------------------------------------------------------------
 // استبدل هذا العنوان بـ IP السيرفر الخاص بك أو localhost إذا كنت تجرب محلياً
-const String SERVER_URL = "http://10.0.2.2:8000"; // 10.0.2.2 هو localhost للأندرويد
-
+const String SERVER_URL = "https://music-download-app.fly.dev";
 void main() {
   runApp(const LiquidGlassApp());
 }
