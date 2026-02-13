@@ -22,7 +22,7 @@ android {
     // 3. الربط مع ملفات فلاتر (الحل السحري)
     // بما إن مجلد android في الـ Root، بنقوله اطلع خطوة واحدة لبره هتلاقي الـ pubspec.yaml
     flutter {
-        source '..'
+    source '../..' 
     }
 
     defaultConfig {
