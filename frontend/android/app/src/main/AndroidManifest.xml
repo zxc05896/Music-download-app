@@ -2,28 +2,35 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.music_download_app">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- أذونات الإنترنت و الحالة الشبكية -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- Storage / Media permissions:
+         - Android 13+ يستخدم READ_MEDIA_* للصور/فيديو/صوت.
+         - احتفظنا بـ READ_EXTERNAL_STORAGE للتوافق مع إصدارات أقل. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <!-- لا تضع WRITE_EXTERNAL_STORAGE أو requestLegacyExternalStorage لأنهم مهجورين على targetSdk >= 30 -->
+    <!-- Foreground service / Wake lock / Notifications -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:label="Liquid Snap"
-        android:name="${applicationName}" 
+        android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
-        android:requestLegacyExternalStorage="true"
         android:hardwareAccelerated="true"
-        android:largeHeap="true" 
+        android:largeHeap="true"
         tools:replace="android:label">
-        
+
+        <!-- تأكيد استخدام Android embedding v2 -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
@@ -36,19 +43,19 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            
+
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
         <meta-data
             android:name="io.flutter.embedding.android.NormalTheme"
-            android:resource="@style/NormalTheme"
-            />
+            android:resource="@style/NormalTheme" />
     </application>
 
+    <!-- Queries for implicit intents (deep links / dial) -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
