@@ -11,49 +11,47 @@ dependencies:
     sdk: flutter
 
   # 🎨 1. UI & Visuals (The Matte Glass Engine)
-  # القوة الضاربة للتصميم الزجاجي والأنيميشن
-  glass_kit: ^3.0.0            # تأثير الزجاج المتقدم
-  glassmorphism: ^3.0.0        # بديل قوي لعمل تأثيرات الثلج
-  flutter_animate: ^4.5.0      # تحريك العناصر بدقة عالية
-  animations: ^2.0.8           # حركات الانتقال الرسمية من جوجل
-  lottie: ^3.1.0               # تشغيل ملفات الأنيميشن المعقدة (JSON)
-  flutter_svg: ^2.0.10         # دعم الأيقونات الفيكتور عالية الجودة
-  google_fonts: ^6.1.0         # خطوط احترافية (Inter, Audiowide)
-  shimmer: ^3.0.0              # تأثير اللمعان أثناء التحميل
-  cached_network_image: ^3.3.1 # تخزين الصور عشان التطبيق يبقى طيارة
+  glass_kit: any
+  glassmorphism: any
+  flutter_animate: any
+  animations: any
+  lottie: any
+  flutter_svg: any
+  google_fonts: any
+  shimmer: any
+  cached_network_image: any
 
-  # 🌐 2. Networking & Download Core (The Beast)
-  # محرك الاتصال والتحميل
-  http: ^1.2.0                 # الاتصال الأساسي
-  dio: ^5.4.0                  # عملاق التحميل (يدعم الاستكمال والسرعة)
-  connectivity_plus: ^6.0.0    # فحص حالة الإنترنت
-  url_launcher: ^6.2.4         # فتح الروابط الخارجية
+  # 🌐 2. Networking & Download Core
+  http: any
+  dio: any
+  connectivity_plus: any
+  url_launcher: any
 
   # ⚙️ 3. State Management & Logic
-  # العقل المدبر
-  provider: ^6.1.1             # إدارة الحالة (خفيف وسريع)
-  permission_handler: ^11.3.0  # إدارة الصلاحيات المعقدة (أندرويد 13+)
-  path_provider: ^2.1.2        # الوصول لمسارات النظام
-  device_info_plus: ^10.1.0    # معرفة نوع الجهاز لضبط الإعدادات
+  provider: any
+  permission_handler: any
+  path_provider: any
+  device_info_plus: any
 
   # 💾 4. File Handling & System
-  # التعامل مع الملفات والإشعارات
-  open_filex: ^4.3.2           # فتح الملفات بعد تحميلها
-  flutter_local_notifications: ^17.0.0 # إشعارات عند اكتمال التحميل
-  gallery_saver: ^2.3.2        # حفظ الفيديو في الاستوديو مباشرة
-  flutter_plugin_android_lifecycle: ^2.0.17 # إصلاح مشاكل الذاكرة
+  open_filex: any
+  flutter_local_notifications: any
+  gallery_saver: any
+  flutter_plugin_android_lifecycle: any
+
+# 🔥 حلال المشاكل: هذا الجزء يجبر كل المكتبات على استخدام النسخة الأحدث
+# ويحل مشكلة الـ Conflict التي ظهرت لك في الـ Actions
+dependency_overrides:
+  http: ^1.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
-  build_runner: ^2.4.8         # لتوليد الأكواد أوتوماتيكياً (لو احتجنا)
+  flutter_lints: any
+  build_runner: any
 
 flutter:
   uses-material-design: true
-
-  # 🖼️ Assets Configuration
-  # تأكد من إنشاء مجلد assets و images داخله
   assets:
     - assets/images/
     - assets/icons/
