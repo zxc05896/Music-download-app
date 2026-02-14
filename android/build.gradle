@@ -1,16 +1,11 @@
-// ==============================================================================
-// 🚀 LIQUID SNAP GLASS - ROOT GRADLE (STABLE 2026)
-// ==============================================================================
-
 buildscript {
-    ext.kotlin_version = '2.3.10'
+    ext.kotlin_version = '1.9.24' // ⚠️ النسخة الذهبية المستقرة
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        // الإصدار المستقر والمضمون
-        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath 'com.android.tools.build:gradle:8.2.1' // ⚠️ الأكثر استقراراً مع فلاتر
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -26,28 +21,6 @@ rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
-
-// 🔥 المنطقة المحظورة (The Modern Fix Zone)
-// نستخدم الطريقة الأكثر أماناً للتأكد من وجود بلاجن الأندرويد قبل لمس إعداداته
-subprojects {
-    project.plugins.withType(com.android.build.gradle.BasePlugin).configureEach {
-        project.android {
-            compileSdkVersion 34
-            buildToolsVersion "34.0.0"
-            
-            defaultConfig {
-                minSdkVersion 23
-                targetSdkVersion 34
-            }
-
-            compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
-            }
-        }
-    }
-}
-
 subprojects {
     project.evaluationDependsOn(':app')
 }
