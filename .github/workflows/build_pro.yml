@@ -1,9 +1,8 @@
-name: 🚀 LiquidSnap Ultimate CI/CD Pipeline (Pro Max)
+name: 🚀 LiquidSnap Ultimate CI/CD Pipeline (Pro Max 2026)
 
 # ==============================================================================
 # 🎯 TRIGGERS (متى يعمل هذا الوحش؟)
 # ==============================================================================
-# يعمل عند رفع الكود على الفروع الرئيسية أو يدوياً
 on:
   push:
     branches: [ "main", "master", "develop" ]
@@ -15,9 +14,9 @@ on:
 # ⚙️ GLOBAL CONFIGURATION (إعدادات البيئة)
 # ==============================================================================
 env:
-  FLUTTER_CHANNEL: 'stable'
-  FLUTTER_VERSION: '3.19.0'
-  JAVA_VERSION: '17'
+  # 🔥 التعديل الأهم: استخدام أحدث نسخة مستقرة بدلاً من تثبيت رقم قديم
+  FLUTTER_CHANNEL: 'stable' 
+  JAVA_VERSION: '17' # ضروري لـ Gradle 9
   ANDROID_COMPILE_SDK: '34'
   ANDROID_BUILD_TOOLS: '34.0.0'
   PROPERTIES_PATH: './android/local.properties'
@@ -30,7 +29,6 @@ jobs:
   # ----------------------------------------------------------------------------
   # JOB 1: QUALITY ASSURANCE (فحص الجودة والكود)
   # ----------------------------------------------------------------------------
-  # الهدف: التأكد من أن الكود نظيف وخالي من الأخطاء اللغوية قبل البناء
   analyze_and_test:
     name: 🔍 Code Analysis & Testing
     runs-on: ubuntu-latest
@@ -46,19 +44,19 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'gradle'
 
-      - name: ⚡ Setup Flutter ${{ env.FLUTTER_VERSION }}
+      - name: ⚡ Setup Flutter (Latest Stable)
         uses: subosito/flutter-action@v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
-          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
+          # ⚠️ تمت إزالة flutter-version للسماح بتحميل الأحدث (3.27+)
 
       - name: 📦 Install Dependencies
         run: flutter pub get
 
       - name: 🧐 Analyze Code (Static Analysis)
         run: flutter analyze
-        continue-on-error: true # لن نوقف البناء بسبب تحذيرات بسيطة (Warnings)
+        continue-on-error: true 
 
       - name: 🧪 Run Unit Tests (Optional)
         run: flutter test || echo "No tests found, skipping..."
@@ -66,7 +64,6 @@ jobs:
   # ----------------------------------------------------------------------------
   # JOB 2: BUILD ENVIRONMENT PREP (تجهيز البيئة الصارمة)
   # ----------------------------------------------------------------------------
-  # الهدف: تنظيف الكاش القديم وإعداد ملفات local.properties
   prepare_environment:
     name: 🛠️ Prepare Android Environment
     needs: analyze_and_test
@@ -84,10 +81,9 @@ jobs:
       - name: ⚡ Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
 
       - name: 🧹 Deep Clean Project
-        # تنظيف عميق جداً لمجلدات Gradle و Flutter لمنع أخطاء التخزين المؤقت
         run: |
           flutter clean
           rm -rf build
@@ -95,7 +91,6 @@ jobs:
           flutter pub get
 
       - name: 📄 Create local.properties
-        # إنشاء ملف الخصائص ديناميكياً لتحديد مسار الـ SDK
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > ${{ env.PROPERTIES_PATH }}
           echo "sdk.dir=$ANDROID_HOME" >> ${{ env.PROPERTIES_PATH }}
@@ -104,12 +99,11 @@ jobs:
   # ----------------------------------------------------------------------------
   # JOB 3: BUILD THE BEAST (بناء النسخة العملاقة)
   # ----------------------------------------------------------------------------
-  # الهدف: بناء APK يحتوي على كل شيء (Universal Debug)
   build_apk_debug_universal:
     name: 🏗️ Build Universal Debug APK (The Beast)
     needs: prepare_environment
     runs-on: ubuntu-latest
-    timeout-minutes: 60 # نعطيه وقت كافي للبناء الضخم
+    timeout-minutes: 60 
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
@@ -123,14 +117,11 @@ jobs:
       - name: ⚡ Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
 
       - name: 📦 Install Dependencies
         run: flutter pub get
 
-      # بناء النسخة الـ Universal (تعمل على كل المعالجات)
-      # --debug: يضمن التثبيت الفوري بدون توقيع معقد
-      # --no-shrink: يمنع تقليل الحجم للحفاظ على كل الميزات
       - name: 🔨 Build Universal APK (Debug Mode)
         run: |
           flutter build apk --debug --no-shrink
@@ -145,7 +136,6 @@ jobs:
   # ----------------------------------------------------------------------------
   # JOB 4: BUILD OPTIMIZED SPLITS (بناء نسخ متخصصة لكل معالج)
   # ----------------------------------------------------------------------------
-  # الهدف: بناء نسخ أصغر مخصصة لمعالجات محددة (للمستقبل)
   build_apk_splits:
     name: 🏎️ Build Architecture Splits (High Performance)
     needs: prepare_environment
@@ -163,13 +153,11 @@ jobs:
       - name: ⚡ Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
 
       - name: 📦 Install Dependencies
         run: flutter pub get
 
-      # بناء نسخ منفصلة (Split per ABI)
-      # هذا ينتج 3 ملفات APK (واحد لكل نوع معالج)
       - name: 🔨 Build Split APKs
         run: |
           flutter build apk --debug --split-per-abi
@@ -195,12 +183,11 @@ jobs:
   # ----------------------------------------------------------------------------
   # JOB 5: NOTIFICATION & LOGGING (التقارير النهائية)
   # ----------------------------------------------------------------------------
-  # الهدف: إصدار تقرير نهائي بالحالة ورفع ملفات اللوج في حالة الفشل
   finalize_build:
     name: ✅ Finalize & Report
     needs: [build_apk_debug_universal, build_apk_splits]
     runs-on: ubuntu-latest
-    if: always() # يعمل دائماً حتى لو فشل البناء لإعطاء تقرير
+    if: always() 
     steps:
       - name: 📊 Generate Build Report
         run: |
@@ -208,13 +195,11 @@ jobs:
           echo "🚀 LIQUID SNAP BUILD COMPLETE"
           echo "=========================================="
           echo "Build Date: $(date)"
-          echo "Flutter Version: ${{ env.FLUTTER_VERSION }}"
-          echo "Build Type: Debug (Developer Edition)"
           echo "Target Android SDK: ${{ env.ANDROID_COMPILE_SDK }}"
           echo "=========================================="
 
       - name: 📥 Upload Build Logs (For Debugging)
-        if: failure() # يرفع اللوج فقط في حالة الفشل
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: Build-Failure-Logs
