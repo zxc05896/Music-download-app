@@ -1,16 +1,9 @@
-"""
-================================================================================
-Project: Liquid Glass Snap Engine
-File: backend/main.py
-Version: 1.0.0 Enterprise Edition
-Author: Gemini (Your AI Assistant)
-Description: 
-    This is the core backend engine designed for High-Performance Servers 
-    (16 Cores / 100GB RAM). It utilizes FastAPI for asynchronous request 
-    handling and a ThreadPoolExecutor to leverage multi-core processing 
-    for video extraction via yt-dlp.
-================================================================================
-"""
+# ==============================================================================
+# 🚀 PROJECT: LIQUID GLASS ENGINE (ENTERPRISE EDITION)
+# 📂 FILE: backend/main.py
+# 👤 AUTHOR: GEMINI PRO (INTELLIGENT ARCHITECT)
+# ⚙️ SPECS: OPTIMIZED FOR 16 CORES / HIGH-THROUGHPUT / ANTI-BOT BYPASS
+# ==============================================================================
 
 import os
 import sys
@@ -18,316 +11,259 @@ import time
 import json
 import logging
 import asyncio
-import secrets
-from typing import List, Optional, Dict, Any, Union
-from concurrent.futures import ThreadPoolExecutor
+from typing import List, Optional, Dict, Any
 from enum import Enum
+from concurrent.futures import ThreadPoolExecutor
 
 # ------------------------------------------------------------------------------
-# 1. Dependency Checks & Imports
+# 1. Dependency Initialization & Safety Checks
 # ------------------------------------------------------------------------------
 try:
-    from fastapi import FastAPI, HTTPException, Request, Depends, BackgroundTasks
-    from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import JSONResponse
-    from fastapi.security import APIKeyHeader
-    from pydantic import BaseModel, Field, HttpUrl
     import uvicorn
     import yt_dlp
+    from fastapi import FastAPI, HTTPException, Request
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel, Field
+    # psutil is optional but recommended for server monitoring
+    try:
+        import psutil
+    except ImportError:
+        psutil = None
 except ImportError as e:
-    print(f"[CRITICAL ERROR] Missing Dependency: {e}")
-    print("Please ensure 'requirements.txt' is installed.")
+    print(f"❌ [CRITICAL ERROR] Missing Library: {e}")
+    print("👉 Run: pip install fastapi uvicorn yt-dlp pydantic psutil")
     sys.exit(1)
 
 # ------------------------------------------------------------------------------
-# 2. Advanced Configuration & Constants
+# 2. Server Configuration (The Brain)
 # ------------------------------------------------------------------------------
-
-# Server Configuration
-SERVER_HOST = "0.0.0.0"
-SERVER_PORT = 8000
-WORKER_THREADS = 32  # Optimized for 16 Cores (2x Cores is a good rule of thumb)
 API_VERSION = "v1"
-APP_NAME = "LiquidGlass-Engine"
+HOST = "0.0.0.0"
+PORT = 8080
 
-# Security Configuration
-# In production, use environment variables for keys!
-API_SECRET_KEY = os.getenv("API_SECRET", "liquid_glass_super_secret_key_2026")
-ALLOWED_ORIGINS = ["*"]  # Allow all for mobile app access (Restrict in Production)
+# 🔥 THREADING OPTIMIZATION:
+# Uses (CPU_COUNT * 2) workers to maximize throughput on your 16-Core Server.
+CPU_CORES = os.cpu_count() or 4
+MAX_WORKERS = CPU_CORES * 2 
 
-# ------------------------------------------------------------------------------
-# 3. Logging System Setup
-# ------------------------------------------------------------------------------
-# We create a sophisticated logger to track every move of the server.
+# Logging Configuration (Professional Audit Trail)
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [%(threadName)s] %(message)s",
+    format="%(asctime)s [%(levelname)s] ⚡ %(message)s",
     handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("server_logs.log", mode='a', encoding='utf-8')
+        logging.StreamHandler(sys.stdout)
     ]
 )
-logger = logging.getLogger(APP_NAME)
+logger = logging.getLogger("LiquidEngine")
 
 # ------------------------------------------------------------------------------
-# 4. Data Models (Pydantic Schema)
+# 3. Data Models (Strict Validation Layer)
 # ------------------------------------------------------------------------------
-# These classes ensure the data coming from the mobile app is valid.
+class RequestModel(BaseModel):
+    """The expected data packet from the mobile app."""
+    url: str
+    include_audio: bool = True
 
-class VideoFormatType(str, Enum):
-    VIDEO = "video"
-    AUDIO = "audio"
-    BOTH = "video+audio"
+class FormatModel(BaseModel):
+    """Blueprint for a single download option."""
+    resolution: str
+    ext: str
+    url: str
+    filesize: Optional[str] = "Unknown"
+    note: Optional[str] = ""
 
-class VideoQuality(BaseModel):
-    """Represents a single quality option for a video."""
-    format_id: str = Field(..., description="The unique ID from yt-dlp")
-    ext: str = Field(..., description="File extension (mp4, webm, mp3)")
-    resolution: Optional[str] = Field(None, description="Resolution (e.g., 1080p)")
-    filesize: Optional[int] = Field(None, description="Approximate file size in bytes")
-    video_codec: Optional[str] = Field(None, description="Video codec used")
-    audio_codec: Optional[str] = Field(None, description="Audio codec used")
-    url: Optional[str] = Field(None, description="Direct download URL")
-    note: Optional[str] = Field(None, description="Extra info (e.g., HDR, 60fps)")
-
-class VideoMetadata(BaseModel):
-    """Comprehensive metadata about the requested video."""
-    id: str
+class ResponseModel(BaseModel):
+    """The clean, structured response sent back to the app."""
     title: str
-    uploader: Optional[str] = None
-    duration: Optional[int] = None
-    view_count: Optional[int] = None
-    thumbnail: Optional[str] = None
-    description: Optional[str] = None
-    formats: List[VideoQuality]
-
-class ExtractionRequest(BaseModel):
-    """The request body expected from the Liquid Glass App."""
-    url: HttpUrl = Field(..., description="The URL of the video to process")
-    include_audio: bool = Field(True, description="Whether to fetch audio-only formats")
-    cookies_path: Optional[str] = Field(None, description="Path to cookies file if needed")
-
-class ServerStatus(BaseModel):
-    status: str
-    uptime: float
-    workers_active: int
-    memory_usage: str
+    thumbnail: str
+    duration: int
+    formats: List[FormatModel]
+    server_time: float
 
 # ------------------------------------------------------------------------------
-# 5. The Core Engine (yt-dlp Wrapper)
+# 4. The Core Engine (Anti-Bot & Extraction Logic)
 # ------------------------------------------------------------------------------
-class YTDLPEngine:
+class LiquidEngine:
     """
-    A High-Performance wrapper around yt-dlp.
-    Designed to run in a separate thread pool to avoid blocking the API.
+    The heart of the application. Encapsulates yt-dlp logic 
+    with advanced spoofing to bypass YouTube blocking.
     """
+    
     def __init__(self):
-        # Base options for maximum compatibility and speed
-        self.base_opts = {
+        # 🛡️ STEALTH MODE CONFIGURATION
+        self.ydl_opts = {
             'quiet': True,
             'no_warnings': True,
-            'format': 'bestvideo+bestaudio/best',
+            'format': 'best', # We fetch best, then extract all formats manually
             'extract_flat': False,
+            
+            # 🚀 PERFORMANCE SETTINGS
             'socket_timeout': 15,
-            'retries': 10,
+            'retries': 5,
             'nocheckcertificate': True,
+            
+            # 🕵️ ANTI-BOT & GEO-BYPASS TACTICS
             'geo_bypass': True,
-            # User Agent spoofing to avoid detection
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'force_ipv4': True, # Crucial for Cloud Servers (Fly.io/AWS)
+            'source_address': '0.0.0.0',
+            
+            # 🤖 CLIENT SPOOFING (The key to fixing 403 Errors)
+            # Pretends to be a real Android device using the official API
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web'],
+                    'skip': ['hls', 'dash'] # Skip streaming protocols, focus on direct files
+                }
+            }
         }
 
-    def _process_formats(self, formats_raw: List[Dict]) -> List[VideoQuality]:
-        """
-        Cleans and sorts the raw formats from yt-dlp into a clean list for the App.
-        """
-        processed = []
-        for f in formats_raw:
-            # Skip m3u8 (HLS) streams if direct links are preferred, 
-            # but keep them if that's all there is.
-            
-            # Logic to determine resolution string
-            res = f"{f.get('height')}p" if f.get('height') else "Audio Only"
-            
-            # Logic to determine note
-            note_parts = []
-            if f.get('fps') and f.get('fps') > 30:
-                note_parts.append(f"{int(f['fps'])}fps")
-            if f.get('vcodec') != 'none' and f.get('acodec') != 'none':
-                 note_parts.append("Video+Audio")
-            elif f.get('vcodec') == 'none':
-                 note_parts.append("Audio Only")
-            else:
-                 note_parts.append("Video Only")
+    def _format_size(self, bytes_size):
+        if not bytes_size: return "Unknown"
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if bytes_size < 1024:
+                return f"{bytes_size:.2f} {unit}"
+            bytes_size /= 1024
+        return f"{bytes_size:.2f} TB"
 
-            q = VideoQuality(
-                format_id=f.get('format_id', 'unknown'),
-                ext=f.get('ext', 'mp4'),
-                resolution=res,
-                filesize=f.get('filesize') or f.get('filesize_approx'),
-                video_codec=f.get('vcodec'),
-                audio_codec=f.get('acodec'),
-                url=f.get('url'),
-                note=", ".join(note_parts)
-            )
-            processed.append(q)
-        
-        # Sort: Highest resolution first, then file size
-        processed.sort(key=lambda x: (
-            int(x.resolution.replace('p', '')) if 'p' in x.resolution else 0, 
-            x.filesize or 0
-        ), reverse=True)
-        
-        return processed
-
-    def extract(self, url: str) -> VideoMetadata:
-        """
-        The main extraction logic.
-        """
-        logger.info(f"Starting extraction for URL: {url}")
+    def process(self, url: str, include_audio: bool) -> Dict:
+        """Synchronous extraction logic (run in thread pool)."""
         start_time = time.time()
         
         try:
-            with yt_dlp.YoutubeDL(self.base_opts) as ydl:
+            with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
+                # 1. Extract Info
                 info = ydl.extract_info(url, download=False)
                 
-                # Sanitize Data
-                clean_formats = self._process_formats(info.get('formats', []))
-                
-                metadata = VideoMetadata(
-                    id=info.get('id'),
-                    title=info.get('title'),
-                    uploader=info.get('uploader'),
-                    duration=info.get('duration'),
-                    view_count=info.get('view_count'),
-                    thumbnail=info.get('thumbnail'),
-                    description=info.get('description')[:500] if info.get('description') else "", # Limit description
-                    formats=clean_formats
-                )
-                
-                elapsed = time.time() - start_time
-                logger.info(f"Extraction successful. Time: {elapsed:.2f}s. Formats found: {len(clean_formats)}")
-                return metadata
-                
-        except yt_dlp.utils.DownloadError as e:
-            logger.error(f"Download Error: {str(e)}")
-            raise ValueError(f"Video unavailable or private: {str(e)}")
+                # 2. Filter & Clean Formats
+                valid_formats = []
+                unique_qualities = set()
+
+                raw_formats = info.get('formats', [])
+                # Reverse to get best quality first usually
+                for f in reversed(raw_formats):
+                    video_url = f.get('url')
+                    if not video_url: continue # Skip if no direct link
+                    
+                    # Logic to identify resolution
+                    height = f.get('height')
+                    res = f"{height}p" if height else "Audio Only"
+                    ext = f.get('ext', 'mp4')
+                    
+                    # Deduplication key
+                    fid = f"{res}-{ext}"
+                    if fid in unique_qualities: continue
+                    unique_qualities.add(fid)
+
+                    # Build the object
+                    valid_formats.append({
+                        "resolution": res,
+                        "ext": ext,
+                        "url": video_url,
+                        "filesize": self._format_size(f.get('filesize')),
+                        "note": f.get('format_note', '')
+                    })
+
+                # 3. Construct Final Response
+                return {
+                    "title": info.get('title', 'Unknown Title'),
+                    "thumbnail": info.get('thumbnail', ''),
+                    "duration": info.get('duration', 0),
+                    "formats": valid_formats,
+                    "server_time": round(time.time() - start_time, 3)
+                }
+
         except Exception as e:
-            logger.critical(f"Unexpected Error in Engine: {str(e)}")
-            raise RuntimeError(f"Internal Engine Error: {str(e)}")
+            logger.error(f"Extraction Failed: {str(e)}")
+            # Re-raise to be caught by FastAPI handler
+            raise RuntimeError(str(e))
 
 # ------------------------------------------------------------------------------
-# 6. FastAPI Application Initialization
+# 5. FastAPI Application Lifecycle
 # ------------------------------------------------------------------------------
 app = FastAPI(
-    title="Liquid Glass Downloader API",
-    description="High-Performance Backend for Video Extraction",
-    version=API_VERSION,
-    docs_url="/docs",
-    redoc_url="/redoc"
+    title="Liquid Glass Snap Engine",
+    description="Enterprise Backend for High-Fidelity Media Extraction",
+    version="2.0.0 Pro"
 )
 
-# CORS Middleware (Crucial for Mobile App Communication)
+# 🌐 CORS: ALLOW ALL (Crucial for Mobile Apps)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Thread Pool for Heavy Lifting
-# We use this to offload yt-dlp (which is synchronous) from the main async loop.
-executor = ThreadPoolExecutor(max_workers=WORKER_THREADS)
-engine = YTDLPEngine()
-server_start_time = time.time()
+# Initialize Engine & Thread Pool
+engine = LiquidEngine()
+executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
 # ------------------------------------------------------------------------------
-# 7. Helper Utilities
-# ------------------------------------------------------------------------------
-async def run_in_threadpool(func, *args):
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(executor, func, *args)
-
-# ------------------------------------------------------------------------------
-# 8. API Endpoints
+# 6. API Endpoints
 # ------------------------------------------------------------------------------
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Server is starting up...")
-    logger.info(f"Configured with {WORKER_THREADS} worker threads.")
-    logger.info(f"Running on {SERVER_HOST}:{SERVER_PORT}")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Server is shutting down...")
-    executor.shutdown(wait=True)
-    logger.info("Thread pool closed.")
-
-@app.get("/", tags=["Health"])
-async def root():
-    """Simple Health Check Endpoint."""
-    uptime = time.time() - server_start_time
+@app.get("/", tags=["System"])
+async def health_check():
+    """Ping endpoint for Fly.io health checks."""
+    process = psutil.Process(os.getpid()) if psutil else None
+    usage = process.memory_info().rss / 1024 / 1024 if process else 0
+    
     return {
-        "app": APP_NAME,
         "status": "operational",
-        "uptime_seconds": round(uptime, 2),
-        "docs": "/docs"
+        "engine": "Liquid Glass v2.0",
+        "cores_utilized": MAX_WORKERS,
+        "memory_usage_mb": round(usage, 2)
     }
 
-@app.get(f"/api/{API_VERSION}/status", response_model=ServerStatus, tags=["Health"])
-async def get_server_status():
-    """Returns detailed server stats."""
-    import psutil
-    mem = psutil.virtual_memory()
-    uptime = time.time() - server_start_time
-    
-    return ServerStatus(
-        status="active",
-        uptime=uptime,
-        workers_active=WORKER_THREADS,
-        memory_usage=f"{mem.percent}% used of {round(mem.total / (1024**3), 2)} GB"
-    )
-
-@app.post(f"/api/{API_VERSION}/extract", response_model=VideoMetadata, tags=["Core"])
-async def extract_video(request: ExtractionRequest):
+@app.post(f"/api/{API_VERSION}/extract", response_model=ResponseModel, tags=["Core"])
+async def extract_endpoint(req: RequestModel):
     """
-    Main Endpoint: Receives a URL, returns all video formats.
-    This runs asynchronously using the ThreadPool to prevent blocking.
+    Non-blocking endpoint. 
+    Offloads the heavy yt-dlp work to a separate thread.
     """
-    url = str(request.url)
-    logger.info(f"Received extraction request for: {url}")
+    logger.info(f"📥 REQUEST: {req.url}")
     
-    if "youtube" not in url and "youtu.be" not in url and "facebook" not in url and "instagram" not in url:
-        # We can expand this check later, but for now warning
-        logger.warning(f"URL might not be supported: {url}")
+    # Validation
+    if not req.url.strip():
+        raise HTTPException(status_code=400, detail="URL cannot be empty")
 
     try:
-        # Offload the heavy blocking work to the thread pool
-        result = await run_in_threadpool(engine.extract, url)
+        # ⚡ RUN IN THREAD POOL (Async Magic)
+        # This prevents the server from freezing while processing
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            executor, 
+            engine.process, 
+            req.url, 
+            req.include_audio
+        )
+        
+        logger.info(f"✅ SUCCESS: '{result['title'][:30]}...' ({result['server_time']}s)")
         return result
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except RuntimeError as re:
-        raise HTTPException(status_code=500, detail="Server processing error. Please try again.")
+
+    except RuntimeError as e:
+        error_msg = str(e)
+        logger.error(f"❌ ENGINE ERROR: {error_msg}")
+        
+        # Smart Error Mapping
+        if "Sign in" in error_msg or "private" in error_msg.lower():
+            raise HTTPException(status_code=422, detail="Video is private or age-restricted.")
+        elif "bot" in error_msg.lower():
+            raise HTTPException(status_code=429, detail="Server is currently rate-limited by YouTube.")
+        else:
+            raise HTTPException(status_code=400, detail=f"Could not process video: {error_msg}")
+
     except Exception as e:
-        logger.error(f"Unhandled API Error: {e}")
-        raise HTTPException(status_code=500, detail="Unknown Server Error")
+        logger.critical(f"🔥 SYSTEM CRASH: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # ------------------------------------------------------------------------------
-# 9. Execution Entry Point
+# 7. Entry Point
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    # In a production environment, you would usually run this with:
-    # uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+    print(f"\n🚀 STARTING LIQUID GLASS ENGINE [ENTERPRISE]")
+    print(f"💎 CORES: {CPU_CORES} | WORKERS: {MAX_WORKERS}")
+    print(f"📡 LISTENING: http://{HOST}:{PORT}\n")
     
-    print(f"--- Starting {APP_NAME} Enterprise Edition ---")
-    print(f"--- Detected High-Spec Environment: 16 Cores Available ---")
-    
-    uvicorn.run(
-        "main:app", 
-        host=SERVER_HOST, 
-        port=SERVER_PORT, 
-        reload=True, # Auto-reload on code changes (Dev mode)
-        log_level="info"
-    )
+    uvicorn.run(app, host=HOST, port=PORT)
