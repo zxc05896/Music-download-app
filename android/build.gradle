@@ -1,25 +1,14 @@
-// ==============================================================================
-// 🚀 LIQUID GLASS SNAP - PROJECT LEVEL GRADLE
-// 📅 UPDATED: 2026-02-14 | VERSION: 2.1.0 (BEYOND STABLE)
-// 🛡️ ARCHITECTURE: K2 COMPILER + AGP 9.1.0 + API 36
-// ==============================================================================
-
 buildscript {
-    // 🚀 Kotlin 2.3.10: أحدث إصدار مستقر (إطلاق 5 فبراير 2026)
-    // يدعم محرك K2 Compiler بالكامل لسرعة بناء خارقة
-    ext.kotlin_version = '2.3.10'
-    
     repositories {
         google()
         mavenCentral()
     }
-
     dependencies {
-        // 🛠️ AGP 9.1.0: يدعم Android 16 (API 36) و Java 17/21
-        classpath 'com.android.tools.build:gradle:9.1.0'
+        // ✅ استخدام نسخة مستقرة ومتوفرة (Stable) بدلاً من 9.1.0 المفقودة
+        classpath 'com.android.tools.build:gradle:9.0.1'
         
-        // ربط مكتبة الكوتلين الرسمية
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        // Kotlin 2.3.10
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.10"
     }
 }
 
@@ -38,35 +27,24 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// ==============================================================================
-// 🔥 المنطقة المحظورة (The Fix Zone - Ultimate 2026 Edition) 🔥
-// هذا الكود هو "المايسترو" الذي يفرض القواعد على جميع المكتبات الخارجية 
-// ليحل مشكلة 'compileSdkVersion is not specified' للأبد.
-// ==============================================================================
+// 🔥 المنطقة المحظورة (Fix Zone)
+// إجبار جميع المكتبات على استخدام API 36 لتفادي الأخطاء
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty("android")) {
             project.android {
-                // 1. حل مشكلة الـ Namespace للمكتبات القديمة التي تفتقدها
                 if (namespace == null) {
                     namespace project.group
                 }
-                
-                // 2. إجبار الجميع على البناء باستخدام Android 16 (API 36)
-                // هذا يضمن أن مكتبات مثل connectivity_plus ستعمل غصب عنها
                 compileSdkVersion 36
                 buildToolsVersion "36.0.0"
                 
-                // 3. توحيد إعدادات الـ SDK لجميع أجزاء المشروع
                 defaultConfig {
-                    minSdkVersion 23 // الحد الأدنى لعام 2026 لضمان أفضل أداء
+                    minSdkVersion 23
                     targetSdkVersion 36
-                    
-                    // تحسين أداء معالجة الـ Dexing
-                    multiDexEnabled true
                 }
-
-                // 4. إجبار التوافق مع Java 17 (المتطلب لـ Gradle 9+)
+                
+                // إجبار استخدام Java 17
                 compileOptions {
                     sourceCompatibility JavaVersion.VERSION_17
                     targetCompatibility JavaVersion.VERSION_17
@@ -76,7 +54,6 @@ subprojects {
     }
 }
 
-// تنظيف مخلفات البناء القديمة
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
