@@ -1,6 +1,7 @@
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
+    // ✅ استدعاء البلاجن بالاسم الجديد
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -17,12 +18,12 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '
 
 android {
     namespace "com.boda.liquidsnap"
-    compileSdk 36
+    compileSdk 34  // متوافق مع AGP 8.7.3
 
     defaultConfig {
         applicationId "com.boda.liquidsnap"
         minSdk 23
-        targetSdk 36
+        targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -35,7 +36,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs += ["-Xjdk-release=17"]
     }
 
     buildTypes {
