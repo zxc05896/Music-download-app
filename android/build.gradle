@@ -1,6 +1,6 @@
 buildscript {
-    // 🚀 Kotlin 2.1.10: أحدث وأسرع إصدار في 2026 (يدعم K2 Compiler)
-    ext.kotlin_version = '2.1.10'
+    // 🚀 Kotlin 2.3.10: أحدث إصدار نزل يوم 5 فبراير 2026
+    ext.kotlin_version = '2.3.10'
     
     repositories {
         google()
@@ -8,10 +8,10 @@ buildscript {
     }
 
     dependencies {
-        // 🛠️ AGP 8.7.0: الإصدار القياسي لعام 2026 والمتوافق مع Gradle 8.10+
-        classpath 'com.android.tools.build:gradle:8.7.0'
+        // 🛠️ AGP 8.9.0: الإصدار المتوافق مع Kotlin 2.3+ في 2026
+        classpath 'com.android.tools.build:gradle:8.9.0'
         
-        // الكوتلين الحديث
+        // الكوتلين الحديث (K2 Compiler Enabled by default)
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -31,14 +31,14 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// 🔥 المنطقة المحظورة (The Fix Zone) 🔥
-// هذا الكود هو "الديكتاتور" الذي يجبر جميع المكتبات (بما فيها القديمة)
-// على العمل بأحدث نظام أندرويد (API 35) لتفادي أي أخطاء Build.
+// 🔥 المنطقة المحظورة (The Fix Zone - 2026 Edition) 🔥
+// الكود ده هيحل مشكلة connectivity_plus وكل المكتبات القديمة
+// عن طريق إجبارها تستخدم Android 15 (API 35)
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty("android")) {
             project.android {
-                // 1. حل مشكلة الـ Namespace للمكتبات القديمة
+                // 1. حل مشكلة الـ Namespace
                 if (namespace == null) {
                     namespace project.group
                 }
@@ -49,10 +49,10 @@ subprojects {
                 // 3. توحيد أدوات البناء
                 buildToolsVersion "35.0.0"
                 
-                // 4. ضبط الـ default config للمكتبات الخارجية
+                // 4. رفع الحد الأدنى للمكتبات ليتوافق مع أمان 2026
                 if (project.android.hasProperty("defaultConfig")) {
                     defaultConfig {
-                        minSdk 23 // الحد الأدنى المقبول في 2026
+                        minSdk 23 
                         targetSdk 35
                     }
                 }
