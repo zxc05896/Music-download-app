@@ -1,7 +1,8 @@
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
-    // ❌ شيلنا سطر dev.flutter.flutter-gradle-plugin عشان هو سبب المشكلة
+    // ✅ ده البلاجن الجديد الإجباري
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
 def localProperties = new Properties()
@@ -12,16 +13,8 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-}
-
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
-
-// ✅ هذا السطر هو "المنقذ": بيحمل كل مكتبات Flutter (Embedding) يدوياً
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace "com.boda.liquidsnap"
@@ -53,17 +46,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    
-    // حل مشاكل التعارض في الملفات
-    packagingOptions {
-        pickFirst 'lib/x86/libc++_shared.so'
-        pickFirst 'lib/x86_64/libc++_shared.so'
-        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
-        pickFirst 'lib/arm64-v8a/libc++_shared.so'
-    }
 }
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:2.3.10"
-    // لا نحتاج لإضافة Flutter Embedding هنا لأن ملف flutter.gradle سيضيفه
+    // البلاجن الجديد هيضيف flutter_embedding تلقائياً، متقلقش
 }
