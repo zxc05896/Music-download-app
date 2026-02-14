@@ -8,7 +8,7 @@ pluginManagement {
     }
     settings.ext.flutterSdkPath = flutterSdkPath()
 
-    // 🔥 هذا السطر هو اللي بيحل مشكلة "Plugin not found"
+    // 🔥 هذا السطر هو الأهم: بيربط أدوات Flutter بالمشروع
     includeBuild("${settings.ext.flutterSdkPath}/packages/flutter_tools/gradle")
 
     repositories {
@@ -19,13 +19,9 @@ pluginManagement {
 }
 
 plugins {
-    // ✅ الاسم الصحيح للبلاجن
+    // تعريف البلاجنز هنا إجباري في النسخ الحديثة
     id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-    
-    // ✅ إصدار مستقر ومتوفر (8.7.3) بدلاً من 9.1.0 المفقود
     id "com.android.application" version "8.7.3" apply false
-    
-    // ✅ كوتلين الحديث
     id "org.jetbrains.kotlin.android" version "2.3.10" apply false
 }
 
