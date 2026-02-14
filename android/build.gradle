@@ -1,13 +1,17 @@
 buildscript {
-    ext.kotlin_version = '1.9.22'
+    // 🚀 Kotlin 2.1.10: أحدث وأسرع إصدار في 2026 (يدعم K2 Compiler)
+    ext.kotlin_version = '2.1.10'
+    
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-        // الإصدار ده (8.2.1) هو المستقر والمضمون في 2026
-        classpath 'com.android.tools.build:gradle:8.2.1' 
+        // 🛠️ AGP 8.7.0: الإصدار القياسي لعام 2026 والمتوافق مع Gradle 8.10+
+        classpath 'com.android.tools.build:gradle:8.7.0'
+        
+        // الكوتلين الحديث
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -25,6 +29,36 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
+}
+
+// 🔥 المنطقة المحظورة (The Fix Zone) 🔥
+// هذا الكود هو "الديكتاتور" الذي يجبر جميع المكتبات (بما فيها القديمة)
+// على العمل بأحدث نظام أندرويد (API 35) لتفادي أي أخطاء Build.
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            project.android {
+                // 1. حل مشكلة الـ Namespace للمكتبات القديمة
+                if (namespace == null) {
+                    namespace project.group
+                }
+                
+                // 2. إجبار استخدام Android 15 (API 35)
+                compileSdk 35
+                
+                // 3. توحيد أدوات البناء
+                buildToolsVersion "35.0.0"
+                
+                // 4. ضبط الـ default config للمكتبات الخارجية
+                if (project.android.hasProperty("defaultConfig")) {
+                    defaultConfig {
+                        minSdk 23 // الحد الأدنى المقبول في 2026
+                        targetSdk 35
+                    }
+                }
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
