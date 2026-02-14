@@ -1,8 +1,7 @@
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
-    // ✅ ده البلاجن الجديد الإجباري
-    id "dev.flutter.flutter-gradle-plugin"
+    id "dev.flutter.flutter-gradle-plugin" // ✅ البلاجن الرسمي الجديد
 }
 
 def localProperties = new Properties()
@@ -18,12 +17,12 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '
 
 android {
     namespace "com.boda.liquidsnap"
-    compileSdk 34
+    compileSdk 35 // ✅ متوافق مع AGP 8.7.3
 
     defaultConfig {
         applicationId "com.boda.liquidsnap"
         minSdk 23
-        targetSdk 34
+        targetSdk 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -49,6 +48,5 @@ android {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.3.10"
-    // البلاجن الجديد هيضيف flutter_embedding تلقائياً، متقلقش
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.1.0"
 }
