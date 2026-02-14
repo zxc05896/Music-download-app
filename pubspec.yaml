@@ -10,54 +10,44 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # 🎨 1. UI & Visuals (The Matte Glass Engine)
-  glass_kit: ^3.0.0             # تأثير الزجاج المتقدم
-  glassmorphism: ^3.0.0         # بديل قوي لتأثيرات الثلج
-  flutter_animate: ^4.5.0       # الأنيميشن السلس
-  animations: ^2.0.11           # حركات جوجل الرسمية
-  lottie: ^3.1.2                # تشغيل ملفات JSON
-  flutter_svg: ^2.0.10          # أيقونات فيكتور
-  google_fonts: ^6.2.1          # الخطوط الحديثة
-  shimmer: ^3.0.0               # تأثير التحميل (Loading)
-  cached_network_image: ^3.3.1  # كاش الصور
-
-  # 🌐 2. Networking & Download Core
-  http: ^1.2.1                  # الاتصال (محدث)
-  dio: ^5.4.3                   # محرك التحميل
-  connectivity_plus: ^6.0.3     # فحص الشبكة (يدعم List<Result>)
-  url_launcher: ^6.2.6          # فتح الروابط
-
-  # ⚙️ 3. State Management & Logic
-  provider: ^6.1.2              # إدارة الحالة
-  permission_handler: ^11.3.1   # الصلاحيات
-  path_provider: ^2.1.3         # مسارات النظام
-  device_info_plus: ^10.1.0     # معلومات الجهاز
+  # UI & Visuals
+  glass_kit: ^3.0.0
+  glassmorphism: ^3.0.0
+  flutter_animate: ^4.5.0
+  google_fonts: ^6.2.1
   
-  # 🛠️ 4. Utilities (الإضافات اللي كانت ناقصة)
-  intl: ^0.19.0                 # تنسيق التواريخ (حل مشكلة Crash)
-  collection: ^1.18.0           # دوال المصفوفات
+  # Networking
+  http: ^1.2.1
+  dio: ^5.4.3
+  connectivity_plus: ^6.0.3
+  url_launcher: ^6.2.6
 
-  # 💾 5. File Handling & System
-  open_filex: ^4.4.0            # فتح الملفات
-  flutter_local_notifications: ^17.1.0 # الإشعارات
-  gallery_saver: ^2.3.2         # الحفظ في الاستوديو
-  flutter_plugin_android_lifecycle: ^2.0.17 # إصلاح مشاكل الذاكرة
+  # Utilities
+  provider: ^6.1.2
+  permission_handler: ^11.3.1
+  path_provider: ^2.1.3
+  intl: ^0.19.0           # Fix for date crash
+  collection: ^1.18.0     # Fix for list crash
+  
+  # File System
+  open_filex: ^4.4.0
+  flutter_local_notifications: ^17.1.0
+  gallery_saver: ^2.3.2
 
-# 🔥 الحل السحري: إجبار المكتبات المتعارضة على العمل معاً
 dependency_overrides:
   http: ^1.2.1
   intl: ^0.19.0
-  # إجبار استخدام أحدث نسخة من webView لو وجدت تعارض
-  webview_flutter_android: ^3.16.0 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  build_runner: ^2.4.9
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/
-    - assets/icons/
+  
+  # ⚠️ تم تعطيل هذا الجزء مؤقتاً لحل مشكلة Build Error
+  # لازم تنشئ المجلدات دي وترفع فيها صور عشان تشيل الـ #
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
