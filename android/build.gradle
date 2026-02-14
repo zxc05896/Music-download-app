@@ -1,3 +1,25 @@
+// ==============================================================================
+// 🚀 LIQUID SNAP GLASS - ROOT GRADLE (ULTRA-STABLE EDITION)
+// 📅 UPDATED: 2026-02-14
+// 🛡️ REASON: Fixing "already evaluated" error & forcing API 34 compatibility
+// ==============================================================================
+
+buildscript {
+    // 🚀 أحدث إصدار كوتلين لعام 2026 (K2 Compiler)
+    ext.kotlin_version = '2.3.10'
+    
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        // ✅ استخدام 8.7.3 لضمان التوافق مع Gradle 9 واستقرار المستودعات
+        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -5,35 +27,48 @@ allprojects {
     }
 }
 
+// 📂 إعداد مجلدات البناء
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
-subprojects {
-    project.evaluationDependsOn(':app')
-}
 
-// 🔥 كود الحماية (Fix Zone)
-// يفرض إصدار 34 (المتوافق مع AGP 8.7.3) على كل المكتبات
+// ==============================================================================
+// 🔥 المنطقة المحظورة (The Ultimate Fix Zone) 🔥
+// تم استبدال afterEvaluate بـ plugins.matching ليتوافق مع Gradle 9
+// هذا الكود يضمن حل مشكلة connectivity_plus وكل المكتبات القديمة غصب عنها
+// ==============================================================================
 subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty("android")) {
-            project.android {
-                if (namespace == null) {
-                    namespace project.group
-                }
-                compileSdkVersion 34
-                buildToolsVersion "34.0.0"
-                
-                defaultConfig {
-                    minSdkVersion 23
-                    targetSdkVersion 34
-                }
+    project.plugins.matching { it.class.name.contains('com.android.build.gradle') }.all {
+        project.android {
+            // 1. إجبار اسم الحزمة للمكتبات التي تفتقد لـ Namespace
+            if (namespace == null) {
+                namespace project.group
+            }
+
+            // 2. توحيد إصدار الأندرويد لضمان الاستقرار (Modern Stable)
+            compileSdkVersion 34
+            buildToolsVersion "34.0.0"
+            
+            defaultConfig {
+                minSdkVersion 23
+                targetSdkVersion 34
+            }
+
+            // 3. إجبار التوافق مع Java 17 (المتطلب الأساسي للمحركات الجديدة)
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
             }
         }
     }
 }
 
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+// 🧹 مهمة التنظيف
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
