@@ -1,59 +1,79 @@
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
-    localProperties.load(new FileInputStream(localPropertiesFile))
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
 }
 
 def flutterRoot = localProperties.getProperty('flutter.sdk')
 if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties or FLUTTER_ROOT env var.")
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
 }
 
-// 1. تطبيق الإضافات (Plugins)
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    // 2. الهوية (Namespace) - لازم يطابق الـ Package Name بتاعك
-    namespace "com.example.music_download_app"
+    // 1. تحديد اسم الحزمة الجديد
+    namespace "com.boda.liquidsnap"
+    
+    // 2. إجبار الإصدار 34 لحل مشكلة "compileSdkVersion not specified"
     compileSdk 34
+    
+    ndkVersion flutter.ndkVersion
 
-    // 3. الربط مع ملفات فلاتر (الحل السحري)
-    // بما إن مجلد android في الـ Root، بنقوله اطلع خطوة واحدة لبره هتلاقي الـ pubspec.yaml
-    flutter {
-    source '../..' 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
     }
 
     defaultConfig {
-        applicationId "com.example.music_download_app"
+        // اسمك الجديد هنا أيضاً
+        applicationId "com.boda.liquidsnap"
+        
+        // 3. رفع الحد الأدنى ليتوافق مع المكتبات الحديثة
         minSdk 21
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
-        multiDexEnabled true
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
     }
 
     buildTypes {
         release {
-            // لو محتاج تعمل Sign للتطبيق لاحقاً، التعديل هيكون هنا
-            minifyEnabled false
-            shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // إعدادات التوقيع للإصدار النهائي
+            signingConfig signingConfigs.debug
+            minifyEnabled true // تفعيل ضغط الكود لتقليل الحجم
+            shrinkResources true // إزالة الموارد غير المستخدمة
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = '17'
     }
 }
 
+flutter {
+    source '../..'
+}
+
 dependencies {
-    // 4. استدعاء لغة Kotlin بشكل صحيح ومستقر
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    // أي مكتبات إضافية للأندرويد بتتحط هنا
 }
