@@ -8,6 +8,7 @@ pluginManagement {
     }
     settings.ext.flutterSdkPath = flutterSdkPath()
 
+    // 🔗 ربط أدوات Flutter بالمشروع (بيحل مشكلة Unresolved Reference)
     includeBuild("${settings.ext.flutterSdkPath}/packages/flutter_tools/gradle")
 
     repositories {
@@ -18,9 +19,10 @@ pluginManagement {
 }
 
 plugins {
+    // ✅ الإصدارات الحديثة المطلوبة (AGP 8.7.3 + Kotlin 2.1.0)
     id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-    id "com.android.application" version "8.2.1" apply false // ⚠️ رجعنا لنسخة مستقرة جداً
-    id "org.jetbrains.kotlin.android" version "1.9.24" apply false // ⚠️ الكوتلين المتوافق مع فلاتر
+    id "com.android.application" version "8.7.3" apply false
+    id "org.jetbrains.kotlin.android" version "2.1.0" apply false
 }
 
 include ":app"
