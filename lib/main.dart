@@ -1,661 +1,668 @@
-// ==============================================================================
-// 📱 Project Name: Liquid Glass Snap (Ultimate Matte Edition)
-// 📂 File Name: lib/main.dart
-// 👤 Author: Gemini Pro (Your AI Partner)
-// 📅 Date: 2026-02-14
-// ------------------------------------------------------------------------------
-// 📝 DESCRIPTION:
-// This is the main entry point for the Liquid Snap application.
-// It implements a sophisticated "Matte Glassmorphism" design language
-// inspired by YouTube's layout but with a futuristic, translucent twist.
-//
-// 🔧 FEATURES INCLUDED:
-// 1. YouTube-style Top Bar & Navigation.
-// 2. Advanced HTTP Error Handling (Fixes 400 Bad Request).
-// 3. Custom Glass Engine (BackdropFilter Implementation).
-// 4. iOS-style Squircle Buttons & Inputs.
-// 5. Smooth Animations & Transitions.
-// ==============================================================================
+// lib/main.dart
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:collection/collection.dart';
+import 'package:intl/intl.dart';
 
-import 'dart:convert'; // For JSON encoding/decoding
-import 'dart:ui';      // For ImageFilter (Blur effects)
-import 'package:flutter/material.dart'; // Core Flutter framework
-import 'package:flutter/cupertino.dart'; // iOS styled icons
-import 'package:http/http.dart' as http; // Networking
-import 'package:url_launcher/url_launcher.dart'; // Opening URLs
-import 'package:google_fonts/google_fonts.dart'; // Custom Typography
-import 'package:flutter_animate/flutter_animate.dart'; // Smooth Animations
-
-// -----------------------------------------------------------------------------
-// 🌍 GLOBAL CONFIGURATION
-// -----------------------------------------------------------------------------
-// The backend server URL deployed on Fly.io
+// CONFIG
 const String SERVER_URL = "https://music-download-app.fly.dev";
+final FlutterLocalNotificationsPlugin _notifPlugin = FlutterLocalNotificationsPlugin();
+final Dio dioClient = Dio();
 
-// -----------------------------------------------------------------------------
-// 🚀 APPLICATION ENTRY POINT
-// -----------------------------------------------------------------------------
-void main() {
-  // Ensures widgets are bound before running the app
+// ENTRY
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _initNotifications();
+  _configureDio();
   runApp(const LiquidGlassApp());
 }
 
-// -----------------------------------------------------------------------------
-// 🎨 APP THEME & ROOT WIDGET
-// -----------------------------------------------------------------------------
+Future<void> _initNotifications() async {
+  const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
+  await _notifPlugin.initialize(const InitializationSettings(android: androidInit, iOS: iosInit));
+}
+
+void _configureDio() {
+  dioClient.options = BaseOptions(
+    connectTimeout: 30000,
+    receiveTimeout: 30000,
+    sendTimeout: 30000,
+    headers: {'User-Agent': 'LiquidSnap/1.0.0'},
+  );
+  dioClient.interceptors.add(InterceptorsWrapper(onError: (e, handler) {
+    handler.next(e);
+  }));
+}
+
+// APP
 class LiquidGlassApp extends StatelessWidget {
   const LiquidGlassApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Liquid Snap',
-      debugShowCheckedModeBanner: false, // Removes the debug banner
-      
-      // --- THEME CONFIGURATION ---
       theme: ThemeData(
         brightness: Brightness.dark,
-        // The signature "Matte Black" background color
-        scaffoldBackgroundColor: const Color(0xFF050505), 
-        primaryColor: Colors.white,
+        scaffoldBackgroundColor: const Color(0xFF050505),
         useMaterial3: true,
-        // Using 'Inter' font for a clean, modern look
-        textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme).apply(
-          bodyColor: Colors.white,
-          displayColor: Colors.white,
-        ),
+        textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme).apply(bodyColor: Colors.white),
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const MainLayoutScreen(),
+      debugShowCheckedModeBanner: false,
+      home: const MainLayout(),
     );
   }
 }
 
-// -----------------------------------------------------------------------------
-// 🏠 MAIN LAYOUT (Bottom Navigation & Page Management)
-// -----------------------------------------------------------------------------
-class MainLayoutScreen extends StatefulWidget {
-  const MainLayoutScreen({super.key});
-
+// MAIN LAYOUT
+class MainLayout extends StatefulWidget {
+  const MainLayout({super.key});
   @override
-  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
+  State<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutScreenState extends State<MainLayoutScreen> {
-  int _selectedIndex = 0; // Tracks the currently active tab
-
-  // List of screens for navigation
-  static final List<Widget> _pages = <Widget>[
-    const HomeScreen(), // The main functionality
-    const PlaceholderScreen(title: "Downloads Library", icon: CupertinoIcons.arrow_down_circle),
-    const PlaceholderScreen(title: "Settings", icon: CupertinoIcons.settings),
+class _MainLayoutState extends State<MainLayout> {
+  int _index = 0;
+  final _pages = <Widget>[
+    const HomePage(),
+    const DownloadsPage(),
+    const QueuePage(),
+    const SettingsPage(),
   ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // extendBody allows content to flow behind the glass bottom bar
-      extendBody: true, 
-      body: _pages[_selectedIndex],
-      
-      // --- FLOATING GLASS BOTTOM NAVIGATION ---
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-        height: 75,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6), // Semi-transparent base
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 30,
-              spreadRadius: 5,
-              offset: const Offset(0, 10),
-            )
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // The Blur Effect
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildNavItem(CupertinoIcons.house_fill, "Home", 0),
-                _buildNavItem(CupertinoIcons.arrow_down_circle_fill, "My Files", 1),
-                _buildNavItem(CupertinoIcons.slider_horizontal_3, "Settings", 2),
-              ],
-            ),
+      extendBody: true,
+      body: _pages[_index],
+      bottomNavigationBar: _buildBottomNav(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openQuickScanner(context),
+        backgroundColor: Colors.cyanAccent,
+        child: const Icon(CupertinoIcons.plus, color: Colors.black),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      height: 78,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white10),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 20)],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _navItem(CupertinoIcons.home, 0),
+              _navItem(CupertinoIcons.arrow_down_circle, 1),
+              const SizedBox(width: 64),
+              _navItem(CupertinoIcons.list_bullet, 2),
+              _navItem(CupertinoIcons.settings, 3),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // Helper method to build navigation items
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    bool isSelected = _selectedIndex == index;
+  Widget _navItem(IconData icon, int i) {
+    final sel = _index == i;
     return GestureDetector(
-      onTap: () => _onItemTapped(index),
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                icon, 
-                color: isSelected ? Colors.cyanAccent : Colors.white38,
-                size: 24,
-              ),
-            ),
-            if (isSelected) 
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Container(
-                  width: 4, 
-                  height: 4, 
-                  decoration: const BoxDecoration(
-                    color: Colors.cyanAccent, 
-                    shape: BoxShape.circle
-                  )
-                ),
-              )
-          ],
-        ),
+      onTap: () => setState(() => _index = i),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 10),
+          Icon(icon, color: sel ? Colors.cyanAccent : Colors.white38, size: sel ? 28 : 22),
+          const SizedBox(height: 6),
+          Container(width: 6, height: 6, decoration: BoxDecoration(color: sel ? Colors.cyanAccent : Colors.transparent, shape: BoxShape.circle))
+        ]),
       ),
     );
   }
+
+  void _openQuickScanner(BuildContext ctx) {
+    showModalBottomSheet(context: ctx, backgroundColor: Colors.transparent, builder: (_) => const QuickAddSheet());
+  }
 }
 
-// -----------------------------------------------------------------------------
-// 🔍 HOME SCREEN (Search Logic & UI)
-// -----------------------------------------------------------------------------
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+// HOME PAGE
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final TextEditingController _controller = TextEditingController();
+  Map<String, dynamic>? _current;
+  String? _error;
+  bool _loading = false;
+  StreamSubscription<ConnectivityResult>? _connSub;
+  ConnectivityResult _connStatus = ConnectivityResult.none;
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+  void initState() {
+    super.initState();
+    _observeConnectivity();
+  }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _urlController = TextEditingController();
-  bool _isLoading = false;
-  Map<String, dynamic>? _videoData;
-  String? _errorMessage;
+  void _observeConnectivity() async {
+    final c = Connectivity();
+    _connStatus = await c.checkConnectivity();
+    _connSub = c.onConnectivityChanged.listen((event) {
+      setState(() => _connStatus = event);
+      if (event == ConnectivityResult.none && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No Internet")));
+      }
+    });
+  }
 
-  // --- CORE LOGIC: FETCH VIDEO DATA ---
-  Future<void> _analyzeLink() async {
-    final url = _urlController.text.trim(); // Remove whitespace
-    
-    // Validation
+  @override
+  void dispose() {
+    _connSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchData() async {
+    final url = _controller.text.trim();
     if (url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please paste a link first!"))
-      );
+      _showSnack("Paste a link");
       return;
     }
-    
-    // Hide keyboard
-    FocusScope.of(context).unfocus();
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _videoData = null;
-    });
-
+    setState(() { _loading = true; _error = null; _current = null; });
     try {
-      // Sending POST request to backend
-      // IMPORTANT: Headers must be exactly 'application/json' to avoid 400 Error
-      final response = await http.post(
-        Uri.parse('$SERVER_URL/api/v1/extract'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "url": url, 
-          "include_audio": true
-        }),
-      ).timeout(const Duration(seconds: 40)); // Timeout safety
-
-      if (response.statusCode == 200) {
-        // Success: Parse the JSON
-        setState(() {
-          _videoData = jsonDecode(response.body);
-        });
+      final uri = Uri.parse('$SERVER_URL/api/v1/extract');
+      final resp = await http.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'url': url, 'include_audio': true})).timeout(const Duration(seconds: 40));
+      if (resp.statusCode == 200) {
+        final j = jsonDecode(resp.body);
+        if (j is Map<String, dynamic>) {
+          setState(() => _current = j);
+        } else {
+          setState(() => _error = 'Invalid response');
+        }
+      } else if (resp.statusCode == 400) {
+        final msg = _parseMessage(resp.body) ?? 'Bad request';
+        setState(() => _error = msg);
       } else {
-        // Failure: Handle Server Errors
-        throw Exception("Server Error (${response.statusCode}): ${response.reasonPhrase}");
+        setState(() => _error = 'Server ${resp.statusCode}');
       }
     } catch (e) {
-      // Network/Logic Errors
-      setState(() {
-        _errorMessage = e.toString().replaceAll("Exception:", "");
-      });
+      setState(() => _error = e.toString());
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  // --- CORE LOGIC: DOWNLOAD HANDLER ---
-  Future<void> _launchDownload(String? url) async {
-    if (url != null) {
-      final uri = Uri.parse(url);
-      // 'externalApplication' mode is crucial for Android 11+ to open browser
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Could not launch download link"))
-        );
-      }
-    }
+  String? _parseMessage(String body) {
+    try {
+      final j = jsonDecode(body);
+      if (j is Map && j['error'] != null) return j['error'].toString();
+      if (j is Map && j['message'] != null) return j['message'].toString();
+    } catch (_) {}
+    return null;
+  }
+
+  void _showSnack(String s) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // 1. Background Layer (Ambient Light Blob)
-        Positioned(
-          top: -150,
-          right: -100,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.cyan.withOpacity(0.08), // Subtle cyan glow
-              backgroundBlendMode: BlendMode.screen,
-            ),
-          ).animate().scale(duration: 3.seconds, curve: Curves.easeInOut).fadeIn(),
-        ),
-
-        // 2. Foreground Content
-        SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              _buildTopBar(),
-              _buildSearchBar(),
-              
-              // 3. Scrollable Content Area
-              Expanded(
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 100), // Padding for bottom nav
-                  children: [
-                    // Loading State
-                    if (_isLoading)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(50), 
-                          child: CircularProgressIndicator(color: Colors.cyanAccent)
-                        )
-                      ),
-
-                    // Error State
-                    if (_errorMessage != null)
-                      _buildErrorCard(),
-
-                    // Empty State
-                    if (_videoData == null && !_isLoading && _errorMessage == null)
-                      _buildEmptyState(),
-
-                    // Result State
-                    if (_videoData != null) 
-                      _buildVideoResult(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return SafeArea(
+      bottom: false,
+      child: Stack(children: [
+        Positioned(top: -150, right: -100, child: Container(width: 420, height: 420, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.cyan.withOpacity(0.06)))) ,
+        Column(children: [
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14), child: Row(children: [
+            Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.cyanAccent.withOpacity(0.08), borderRadius: BorderRadius.circular(12)), child: const Icon(CupertinoIcons.bolt_fill, color: Colors.cyanAccent)),
+            const SizedBox(width: 12),
+            Text('Liquid Snap', style: GoogleFonts.audiowide(fontSize: 22, color: Colors.white)),
+            const Spacer(),
+            IconButton(onPressed: () {}, icon: const Icon(CupertinoIcons.bell, color: Colors.white70)),
+            const CircleAvatar(radius: 16, backgroundColor: Colors.white12, child: Icon(Icons.person, color: Colors.white, size: 18))
+          ])),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: GlassBox(
+            radius: 18,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(children: [
+              const Icon(CupertinoIcons.search, color: Colors.white54),
+              const SizedBox(width: 10),
+              Expanded(child: TextField(controller: _controller, style: const TextStyle(color: Colors.white), decoration: InputDecoration(border: InputBorder.none, hintText: 'Paste link...', hintStyle: TextStyle(color: Colors.white.withOpacity(0.3))), onSubmitted: (_) => _fetchData())),
+              IconButton(onPressed: _fetchData, icon: const Icon(CupertinoIcons.arrow_right_circle_fill, color: Colors.cyanAccent, size: 30))
+            ]),
+          )),
+          Expanded(child: ListView(padding: const EdgeInsets.fromLTRB(20, 12, 20, 120), children: [
+            if (_loading) Center(child: Padding(padding: const EdgeInsets.all(30), child: CircularProgressIndicator(color: Colors.cyanAccent))),
+            if (_error != null) ErrorCard(message: _error!),
+            if (_current == null && !_loading && _error == null) EmptyState(),
+            if (_current != null) ResultCard(data: _current!, onDownload: (format) async {
+              await DownloadManager.instance.enqueue(format as Map<String, dynamic>, _current!);
+              _showSnack("Queued for download");
+            }),
+          ]))
+        ]),
+      ]),
     );
-  }
-
-  // --- UI COMPONENTS ---
-
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-      child: Row(
-        children: [
-          // Logo Icon
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.cyanAccent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(CupertinoIcons.bolt_fill, color: Colors.cyanAccent, size: 20),
-          ),
-          const SizedBox(width: 12),
-          // App Title
-          Text(
-            "Liquid Snap", 
-            style: GoogleFonts.audiowide(fontSize: 24, color: Colors.white)
-          ),
-          const Spacer(),
-          // Profile/Notification Icons
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(CupertinoIcons.bell, color: Colors.white70),
-          ),
-          const CircleAvatar(
-            backgroundColor: Colors.white12,
-            radius: 16,
-            child: Icon(Icons.person, size: 20, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: GlassContainer(
-        radius: 20,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-        child: TextField(
-          controller: _urlController,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-          cursorColor: Colors.cyanAccent,
-          decoration: InputDecoration(
-            hintText: "Paste YouTube link here...",
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-            border: InputBorder.none,
-            icon: Icon(CupertinoIcons.search, color: Colors.white.withOpacity(0.5)),
-            suffixIcon: IconButton(
-              icon: const Icon(CupertinoIcons.arrow_right_circle_fill, color: Colors.cyanAccent, size: 30),
-              onPressed: _analyzeLink,
-            ),
-          ),
-          onSubmitted: (_) => _analyzeLink(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorCard() {
-    return Container(
-      margin: const EdgeInsets.only(top: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.red.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Text(
-              _errorMessage!, 
-              style: const TextStyle(color: Colors.redAccent)
-            ),
-          ),
-        ],
-      ),
-    ).animate().shake();
-  }
-
-  Widget _buildEmptyState() {
-    return Column(
-      children: [
-        const SizedBox(height: 60),
-        Icon(CupertinoIcons.link, size: 80, color: Colors.white.withOpacity(0.05)),
-        const SizedBox(height: 20),
-        Text(
-          "Ready to download?", 
-          style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white24)
-        ),
-        Text(
-          "Paste a link above to start.", 
-          style: GoogleFonts.inter(fontSize: 14, color: Colors.white12)
-        ),
-      ],
-    );
-  }
-
-  Widget _buildVideoResult() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 10),
-        // Section Title
-        const Padding(
-          padding: EdgeInsets.only(left: 10, bottom: 10),
-          child: Text("RESULT", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
-        ),
-        
-        // Video Card
-        GlassContainer(
-          radius: 24,
-          padding: EdgeInsets.zero,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Thumbnail
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Image.network(
-                    _videoData!['thumbnail'] ?? "",
-                    width: double.infinity,
-                    height: 220,
-                    fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, st) => Container(height: 220, color: Colors.grey[900]),
-                  ),
-                  Container(
-                    width: double.infinity,
-                    height: 220,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black.withOpacity(0.7)]
-                      )
-                    ),
-                  ),
-                  // Play Button Decoration
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.5))
-                    ),
-                    child: const Icon(CupertinoIcons.play_fill, color: Colors.white, size: 30),
-                  ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
-                ],
-              ),
-              
-              // 2. Info Section
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _videoData!['title'] ?? "Unknown Title",
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, height: 1.3),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(CupertinoIcons.time, size: 14, color: Colors.white54),
-                        const SizedBox(width: 5),
-                        Text(
-                          _formatDuration(_videoData!['duration']),
-                          style: const TextStyle(color: Colors.white54, fontSize: 13),
-                        ),
-                        const SizedBox(width: 15),
-                        const Icon(CupertinoIcons.eye, size: 14, color: Colors.white54),
-                        const SizedBox(width: 5),
-                        const Text("Views: --", style: TextStyle(color: Colors.white54, fontSize: 13)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const Divider(color: Colors.white10, height: 1),
-
-              // 3. Download Options (Chips)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("AVAILABLE FORMATS", style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 15),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: (_videoData!['formats'] as List).map((format) {
-                        return _buildDownloadChip(format);
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              )
-            ],
-          ),
-        ).animate().slideY(begin: 0.2, end: 0, duration: 500.ms, curve: Curves.easeOutQuad),
-      ],
-    );
-  }
-
-  Widget _buildDownloadChip(Map<String, dynamic> format) {
-    bool isAudio = format['resolution'] == "Audio Only";
-    Color baseColor = isAudio ? Colors.orangeAccent : Colors.cyanAccent;
-    
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _launchDownload(format['url']),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: baseColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: baseColor.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isAudio ? CupertinoIcons.music_note_2 : CupertinoIcons.videocam_fill, 
-                size: 16, 
-                color: baseColor
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "${format['resolution']} • ${format['ext'].toString().toUpperCase()}",
-                style: TextStyle(color: baseColor, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              const SizedBox(width: 8),
-              Icon(CupertinoIcons.cloud_download, size: 16, color: baseColor.withOpacity(0.7)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatDuration(int? seconds) {
-    if (seconds == null) return "--:--";
-    final d = Duration(seconds: seconds);
-    return "${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}";
   }
 }
 
-// -----------------------------------------------------------------------------
-// 🧊 CUSTOM GLASS ENGINE WIDGET
-// -----------------------------------------------------------------------------
-class GlassContainer extends StatelessWidget {
+// WIDGETS
+class GlassBox extends StatelessWidget {
   final Widget child;
   final double radius;
   final EdgeInsetsGeometry? padding;
+  const GlassBox({super.key, required this.child, this.radius = 20, this.padding});
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(borderRadius: BorderRadius.circular(radius), child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: Container(padding: padding, decoration: BoxDecoration(color: Colors.white.withOpacity(0.04), borderRadius: BorderRadius.circular(radius), border: Border.all(color: Colors.white.withOpacity(0.06))), child: child)));
+  }
+}
 
-  const GlassContainer({
-    super.key, 
-    required this.child, 
-    this.radius = 20, 
-    this.padding
-  });
+class ErrorCard extends StatelessWidget {
+  final String message;
+  const ErrorCard({super.key, required this.message});
+  @override
+  Widget build(BuildContext context) {
+    return Container(margin: const EdgeInsets.only(top: 18), padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.red.withOpacity(0.05), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.red.withOpacity(0.18))), child: Row(children: [const Icon(Icons.error_outline, color: Colors.redAccent), const SizedBox(width: 12), Expanded(child: Text(message, style: const TextStyle(color: Colors.redAccent)))]));
+  }
+}
+
+class EmptyState extends StatelessWidget {
+  const EmptyState({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [const SizedBox(height: 80), Icon(CupertinoIcons.link, size: 80, color: Colors.white10), const SizedBox(height: 20), Text('Ready to download?', style: GoogleFonts.inter(fontSize: 20, color: Colors.white24)), Text('Paste a link above to start', style: GoogleFonts.inter(fontSize: 14, color: Colors.white12))]);
+  }
+}
+
+class ResultCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final void Function(Map<String, dynamic>) onDownload;
+  const ResultCard({super.key, required this.data, required this.onDownload});
+  @override
+  Widget build(BuildContext context) {
+    final formats = (data['formats'] as List?) ?? [];
+    final title = data['title'] ?? 'Unknown';
+    final thumb = data['thumbnail'] ?? '';
+    final duration = data['duration'];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 10),
+      const Padding(padding: EdgeInsets.only(left: 6, bottom: 8), child: Text('RESULT', style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12))),
+      GlassBox(radius: 18, padding: EdgeInsets.zero, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Stack(alignment: Alignment.center, children: [
+          if (thumb.isNotEmpty) Image.network(thumb, width: double.infinity, height: 220, fit: BoxFit.cover, errorBuilder: (c, e, s) => Container(height: 220, color: Colors.grey[900])),
+          Container(width: double.infinity, height: 220, decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Colors.black.withOpacity(0.72)]))),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), shape: BoxShape.circle, border: Border.all(color: Colors.white.withOpacity(0.45))), child: const Icon(CupertinoIcons.play_fill, color: Colors.white, size: 30))
+        ]),
+        Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), maxLines: 2, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 8),
+          Row(children: [const Icon(CupertinoIcons.time, color: Colors.white54, size: 14), const SizedBox(width: 6), Text(_fmtDur(duration), style: const TextStyle(color: Colors.white54))])
+        ])),
+        const Divider(color: Colors.white10, height: 1),
+        Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('AVAILABLE FORMATS', style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Wrap(spacing: 10, runSpacing: 10, children: formats.mapIndexed((i, f) {
+            final m = Map<String, dynamic>.from(f as Map);
+            return FormatChip(format: m, onTap: () => onDownload(m));
+          }).toList())
+        ]))
+      ]))
+    ]);
+  }
+
+  static String _fmtDur(dynamic s) {
+    if (s == null) return '--:--';
+    final int sec = (s is int) ? s : int.tryParse(s.toString()) ?? 0;
+    final d = Duration(seconds: sec);
+    return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
+  }
+}
+
+class FormatChip extends StatelessWidget {
+  final Map<String, dynamic> format;
+  final VoidCallback onTap;
+  const FormatChip({super.key, required this.format, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final bool audio = (format['resolution']?.toString().toLowerCase().contains('audio') ?? false);
+    final Color base = audio ? Colors.orangeAccent : Colors.cyanAccent;
+    final String label = '${format['resolution'] ?? 'Audio'} • ${(format['ext'] ?? '').toString().toUpperCase()}';
+    return GestureDetector(onTap: onTap, child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10), decoration: BoxDecoration(color: base.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: base.withOpacity(0.25))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(audio ? CupertinoIcons.music_note_2 : CupertinoIcons.videocam_fill, color: base, size: 16), const SizedBox(width: 8), Text(label, style: TextStyle(color: base, fontWeight: FontWeight.bold)), const SizedBox(width: 8), Icon(CupertinoIcons.cloud_download, size: 16, color: base.withOpacity(0.8))])));
+  }
+}
+
+// DOWNLOAD MANAGER (singleton)
+class DownloadManager {
+  DownloadManager._internal();
+  static final DownloadManager instance = DownloadManager._internal();
+
+  final List<_DownloadTask> _queue = [];
+  final StreamController<List<_DownloadTask>> _queueController = StreamController.broadcast();
+  bool _running = false;
+
+  Stream<List<_DownloadTask>> get stream => _queueController.stream;
+
+  Future<void> enqueue(Map<String, dynamic> format, Map<String, dynamic> meta) async {
+    final String url = format['url'] ?? '';
+    final String fname = _sanitizeFilename('${meta['title'] ?? 'file'}_${format['resolution'] ?? 'format'}.${(format['ext'] ?? 'mp4')}');
+    final dir = await _defaultDir();
+    final path = '${dir.path}/$fname';
+    final task = _DownloadTask(url: url, path: path, meta: meta, format: format);
+    _queue.add(task);
+    _queueController.add(_queue);
+    _processQueue();
+  }
+
+  Future<Directory> _defaultDir() async {
+    if (Platform.isAndroid) {
+      final d = await getExternalStorageDirectory();
+      if (d != null) {
+        final downloads = Directory('${d.path}/Download');
+        if (!downloads.existsSync()) downloads.createSync(recursive: true);
+        return downloads;
+      }
+    }
+    return await getApplicationDocumentsDirectory();
+  }
+
+  void _processQueue() {
+    if (_running) return;
+    _running = true;
+    _runLoop();
+  }
+
+  Future<void> _runLoop() async {
+    while (_queue.isNotEmpty) {
+      final task = _queue.first;
+      try {
+        await _performDownload(task);
+        _queue.removeAt(0);
+        _queueController.add(_queue);
+      } catch (e) {
+        task.attempts += 1;
+        if (task.attempts >= 3) {
+          _queue.removeAt(0);
+          _queueController.add(_queue);
+        } else {
+          await Future.delayed(Duration(seconds: 2 * task.attempts));
+        }
+      }
+    }
+    _running = false;
+  }
+
+  Future<void> _performDownload(_DownloadTask task) async {
+    final CancelToken cancelToken = CancelToken();
+    final r = await dioClient.download(task.url, task.path, cancelToken: cancelToken, onReceiveProgress: (r, t) {
+      task.progress = (t == 0) ? 0 : (r / t);
+      _queueController.add(_queue);
+    });
+    if (r.statusCode == 200 || r.statusCode == 206) {
+      await _notifyComplete(task);
+    } else {
+      throw Exception('Bad status ${r.statusCode}');
+    }
+  }
+
+  Future<void> _notifyComplete(_DownloadTask task) async {
+    final android = AndroidNotificationDetails('dl', 'Downloads', importance: Importance.high, priority: Priority.high);
+    const ios = DarwinNotificationDetails();
+    await _notifPlugin.show(Random().nextInt(9999), 'Download complete', task.path.split('/').last, NotificationDetails(android: android, iOS: ios), payload: task.path);
+  }
+
+  String _sanitizeFilename(String name) {
+    return name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+  }
+
+  List<_DownloadTask> get queue => List.unmodifiable(_queue);
+}
+
+class _DownloadTask {
+  final String url;
+  final String path;
+  final Map<String, dynamic> meta;
+  final Map<String, dynamic> format;
+  double progress = 0;
+  int attempts = 0;
+  _DownloadTask({required this.url, required this.path, required this.meta, required this.format});
+}
+
+// DOWNLOADS PAGE
+class DownloadsPage extends StatefulWidget {
+  const DownloadsPage({super.key});
+  @override
+  State<DownloadsPage> createState() => _DownloadsPageState();
+}
+
+class _DownloadsPageState extends State<DownloadsPage> {
+  List<FileSystemEntity> _files = [];
+  StreamSubscription? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _sub = DownloadManager.instance._queueController.stream.listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  Future<void> _load() async {
+    final dir = await _getDir();
+    if (!dir.existsSync()) return;
+    final list = dir.listSync().whereType<File>().toList().reversed.toList();
+    setState(() => _files = list);
+  }
+
+  Future<Directory> _getDir() async {
+    if (Platform.isAndroid) {
+      final d = await getExternalStorageDirectory();
+      final downloads = Directory('${d!.path}/Download');
+      if (!downloads.existsSync()) downloads.createSync(recursive: true);
+      return downloads;
+    }
+    return await getApplicationDocumentsDirectory();
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: BackdropFilter(
-        // The strength of the blur
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15), 
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            // The "Matte" transparency color (Very low opacity white)
-            color: Colors.white.withOpacity(0.06), 
-            borderRadius: BorderRadius.circular(radius),
-            // Subtle gradient border for 3D effect
-            border: Border.all(
-              color: Colors.white.withOpacity(0.08),
-              width: 1.0,
-            ),
-          ),
-          child: child,
-        ),
-      ),
+    final queue = DownloadManager.instance.queue;
+    return SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
+      Row(children: [Text('Downloads', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)), const Spacer(), IconButton(onPressed: _load, icon: const Icon(CupertinoIcons.refresh))]),
+      const SizedBox(height: 12),
+      if (queue.isNotEmpty) GlassBox(radius: 12, padding: const EdgeInsets.all(12), child: Column(children: queue.map((t) => ListTile(leading: const Icon(CupertinoIcons.cloud_download), title: Text(t.path.split('/').last, style: const TextStyle(color: Colors.white)), subtitle: LinearProgressIndicator(value: t.progress, color: Colors.cyanAccent, backgroundColor: Colors.white10))).toList())),
+      const SizedBox(height: 12),
+      Expanded(child: _files.isEmpty ? Center(child: Text('No downloads yet', style: TextStyle(color: Colors.white24))) : ListView.builder(itemCount: _files.length, itemBuilder: (c, i) {
+        final f = _files[i];
+        final name = f.path.split('/').last;
+        return ListTile(leading: const Icon(CupertinoIcons.doc), title: Text(name, style: const TextStyle(color: Colors.white)), trailing: PopupMenuButton(itemBuilder: (_) => [const PopupMenuItem(value: 'open', child: Text('Open')), const PopupMenuItem(value: 'share', child: Text('Share')), const PopupMenuItem(value: 'delete', child: Text('Delete'))], onSelected: (v) async {
+          if (v == 'delete') { await File(f.path).delete(); _load(); }
+          if (v == 'open') { await _openFile(f.path); }
+          if (v == 'share') { /* implement share if needed */ }
+        }));
+      })),
+    ])));
+  }
+
+  Future<void> _openFile(String path) async {
+    final uri = Uri.file(path);
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+}
+
+// QUEUE PAGE
+class QueuePage extends StatefulWidget {
+  const QueuePage({super.key});
+  @override
+  State<QueuePage> createState() => _QueuePageState();
+}
+
+class _QueuePageState extends State<QueuePage> {
+  @override
+  Widget build(BuildContext context) {
+    final q = DownloadManager.instance.queue;
+    return SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
+      Row(children: [Text('Queue', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)), const Spacer()]),
+      const SizedBox(height: 12),
+      if (q.isEmpty) Expanded(child: Center(child: Text('Queue empty', style: TextStyle(color: Colors.white24)))),
+      if (q.isNotEmpty) Expanded(child: ListView.builder(itemCount: q.length, itemBuilder: (c, i) {
+        final t = q[i];
+        return ListTile(leading: const Icon(CupertinoIcons.cloud_download), title: Text(t.path.split('/').last, style: const TextStyle(color: Colors.white)), subtitle: LinearProgressIndicator(value: t.progress, color: Colors.cyanAccent, backgroundColor: Colors.white10), trailing: IconButton(icon: const Icon(CupertinoIcons.trash), onPressed: () {
+          // simple cancel emulation
+          DownloadManager.instance._queue.removeAt(i);
+          setState(() {});
+        }));
+      })),
+    ])));
+  }
+}
+
+// SETTINGS PAGE
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  String server = SERVER_URL;
+  bool notifications = true;
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
+      Row(children: [Text('Settings', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold)), const Spacer()]),
+      const SizedBox(height: 12),
+      GlassBox(radius: 12, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), child: Row(children: [
+        Expanded(child: TextFormField(initialValue: server, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(border: InputBorder.none, hintText: 'Server URL', hintStyle: TextStyle(color: Colors.white24)), onChanged: (v) => server = v)),
+        IconButton(onPressed: () async { if (await canLaunchUrl(Uri.parse(server))) await launchUrl(Uri.parse(server)); }, icon: const Icon(CupertinoIcons.arrow_right_circle_fill, color: Colors.cyanAccent))
+      ])),
+      const SizedBox(height: 12),
+      ListTile(leading: const Icon(CupertinoIcons.bell), title: const Text('Notifications'), trailing: Switch(value: notifications, onChanged: (v) => setState(() => notifications = v))),
+      ListTile(leading: const Icon(CupertinoIcons.cloud), title: const Text('Clear cache'), onTap: () async { await _clearCache(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cache cleared'))); }),
+      const Spacer(),
+      Text('Liquid Snap • build 1.0.0', style: TextStyle(color: Colors.white24)),
+      const SizedBox(height: 20),
+    ])));
+  }
+
+  Future<void> _clearCache() async {
+    final dir = await getTemporaryDirectory();
+    if (dir.existsSync()) dir.deleteSync(recursive: true);
+  }
+}
+
+// QUICK ADD SHEET
+class QuickAddSheet extends StatefulWidget {
+  const QuickAddSheet({super.key});
+  @override
+  State<QuickAddSheet> createState() => _QuickAddSheetState();
+}
+
+class _QuickAddSheetState extends State<QuickAddSheet> {
+  final TextEditingController _c = TextEditingController();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 220,
+      decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+      padding: const EdgeInsets.all(16),
+      child: Column(children: [
+        Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(4))),
+        const SizedBox(height: 18),
+        Text('Quick add', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        GlassBox(radius: 12, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), child: Row(children: [Expanded(child: TextField(controller: _c, decoration: const InputDecoration(border: InputBorder.none, hintText: 'Paste link...'))), IconButton(onPressed: () async {
+          final link = _c.text.trim();
+          if (link.isEmpty) return;
+          Navigator.of(context).pop();
+        }, icon: const Icon(CupertinoIcons.arrow_right_circle_fill, color: Colors.cyanAccent))])),
+        const SizedBox(height: 12),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')), ElevatedButton(onPressed: () => Navigator.of(context).pop(), style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent), child: const Text('Add', style: TextStyle(color: Colors.black)))]),
+      ]),
     );
   }
 }
 
-// -----------------------------------------------------------------------------
-// 🚧 PLACEHOLDER SCREEN (For Future Tabs)
-// -----------------------------------------------------------------------------
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  final IconData icon;
+// UTILITIES
+String safeFileName(String s) {
+  return s.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+}
 
-  const PlaceholderScreen({super.key, required this.title, required this.icon});
+Future<bool> requestStoragePermission() async {
+  if (Platform.isAndroid) {
+    final status = await Permission.storage.request();
+    return status.isGranted;
+  }
+  return true;
+}
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 80, color: Colors.white10),
-          const SizedBox(height: 20),
-          Text(title, style: const TextStyle(color: Colors.white38, fontSize: 20)),
-          const SizedBox(height: 5),
-          const Text("Coming Soon", style: TextStyle(color: Colors.cyanAccent, fontSize: 14)),
-        ],
-      ),
-    );
+// SIMPLE MOCKED SERVICE FOR TESTING
+class ApiService {
+  final String base;
+  ApiService({required this.base});
+  Future<Map<String, dynamic>> extract(String url) async {
+    final uri = Uri.parse('$base/api/v1/extract');
+    final resp = await http.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'url': url, 'include_audio': true}));
+    if (resp.statusCode == 200) {
+      return jsonDecode(resp.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('API ${resp.statusCode}');
+    }
   }
 }
+
+// EXTRA: Helpers for testing and debug
+class DevTools {
+  static Future<void> seedMockFile(String path, int kb) async {
+    final file = File(path);
+    if (!file.existsSync()) {
+      await file.create(recursive: true);
+    }
+    final sink = file.openWrite();
+    final chunk = List<int>.filled(1024, 0);
+    for (int i = 0; i < kb; i++) sink.add(chunk);
+    await sink.close();
+  }
+  static String fmtBytes(int b) {
+    if (b < 1024) return '$b B';
+    if (b < 1024 * 1024) return '${(b / 1024).toStringAsFixed(1)} KB';
+    return '${(b / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+}
+
+// END OF FILE (partial big bundle)
