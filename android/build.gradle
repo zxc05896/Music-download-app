@@ -1,20 +1,15 @@
 // ==============================================================================
-// 🚀 LIQUID SNAP GLASS - ROOT GRADLE (ULTRA-STABLE EDITION)
-// 📅 UPDATED: 2026-02-14
-// 🛡️ REASON: Fixing "already evaluated" error & forcing API 34 compatibility
+// 🚀 LIQUID SNAP GLASS - ROOT GRADLE (STABLE 2026)
 // ==============================================================================
 
 buildscript {
-    // 🚀 أحدث إصدار كوتلين لعام 2026 (K2 Compiler)
     ext.kotlin_version = '2.3.10'
-    
     repositories {
         google()
         mavenCentral()
     }
-
     dependencies {
-        // ✅ استخدام 8.7.3 لضمان التوافق مع Gradle 9 واستقرار المستودعات
+        // الإصدار المستقر والمضمون
         classpath 'com.android.tools.build:gradle:8.7.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -27,26 +22,16 @@ allprojects {
     }
 }
 
-// 📂 إعداد مجلدات البناء
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
 
-// ==============================================================================
-// 🔥 المنطقة المحظورة (The Ultimate Fix Zone) 🔥
-// تم استبدال afterEvaluate بـ plugins.matching ليتوافق مع Gradle 9
-// هذا الكود يضمن حل مشكلة connectivity_plus وكل المكتبات القديمة غصب عنها
-// ==============================================================================
+// 🔥 المنطقة المحظورة (The Modern Fix Zone)
+// نستخدم الطريقة الأكثر أماناً للتأكد من وجود بلاجن الأندرويد قبل لمس إعداداته
 subprojects {
-    project.plugins.matching { it.class.name.contains('com.android.build.gradle') }.all {
+    project.plugins.withType(com.android.build.gradle.BasePlugin).configureEach {
         project.android {
-            // 1. إجبار اسم الحزمة للمكتبات التي تفتقد لـ Namespace
-            if (namespace == null) {
-                namespace project.group
-            }
-
-            // 2. توحيد إصدار الأندرويد لضمان الاستقرار (Modern Stable)
             compileSdkVersion 34
             buildToolsVersion "34.0.0"
             
@@ -55,7 +40,6 @@ subprojects {
                 targetSdkVersion 34
             }
 
-            // 3. إجبار التوافق مع Java 17 (المتطلب الأساسي للمحركات الجديدة)
             compileOptions {
                 sourceCompatibility JavaVersion.VERSION_17
                 targetCompatibility JavaVersion.VERSION_17
@@ -68,7 +52,6 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// 🧹 مهمة التنظيف
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
