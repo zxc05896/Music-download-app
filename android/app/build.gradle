@@ -1,10 +1,8 @@
-// ==============================================================================
-// 🚀 LIQUID GLASS SNAP - MODULE LEVEL GRADLE
-// 📅 UPDATED: 2026-02-14 (API 36 / JAVA 17 EDITION)
-// 🛠️ TARGET: MAXIMUM PERFORMANCE & MODERN ANDROID SUPPORT
-// ==============================================================================
-
-import java.util.Properties
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
 
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
@@ -14,89 +12,42 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-}
-
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
-apply plugin: 'com.android.application'
-// استخدام الـ Plugin الحديث للكوتلين المتوافق مع إصدار 2.3.10
-apply plugin: 'org.jetbrains.kotlin.android'
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
-
 android {
-    // 🛡️ الهوية الجديدة للتطبيق
     namespace "com.boda.liquidsnap"
-    
-    // 🚀 البناء على أحدث SDK لعام 2026 (Android 16)
     compileSdk 36
-    
-    ndkVersion flutter.ndkVersion
+
+    defaultConfig {
+        applicationId "com.boda.liquidsnap"
+        minSdk 23
+        targetSdk 36
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+        multiDexEnabled true
+    }
 
     compileOptions {
-        // 🔥 إجبار Java 17: ضروري جداً لتشغيل Gradle 9 و AGP 9.1
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        // توحيد لغة الآلة مع الجافا لضمان استقرار التحميل
-        jvmTarget = '17'
-        
-        // تفعيل الـ K2 Compiler لسرعة خرافية في الأداء
+        jvmTarget = "17"
         freeCompilerArgs += ["-Xjdk-release=17"]
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
-
-    defaultConfig {
-        applicationId "com.boda.liquidsnap"
-        
-        // رفع الحد الأدنى لضمان عمل مكتبات 2026 الحديثة بدون كراش
-        minSdk 23 
-        targetSdk 36
-        
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
-
-        // تحسين أداء معالجة البيانات الضخمة
-        multiDexEnabled true
     }
 
     buildTypes {
         release {
-            // إعدادات التوقيع (Debug حالياً لحين تجهيز الـ Keystore)
             signingConfig signingConfigs.debug
-            
-            // 🏎️ تقنيات الضغط القصوى لتقليل حجم الـ APK
-            minifyEnabled true 
-            shrinkResources true 
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-
-    // إعدادات التغليف لضمان عدم تضارب الملفات
-    packagingOptions {
-        resources {
-            excludes += '/META-INF/{AL2.0,LGPL2.1}'
-        }
-    }
-}
-
-flutter {
-    source '../..'
 }
 
 dependencies {
-    // 💎 استخدام مكتبة الكوتلين القياسية المحدثة 2026
     implementation "org.jetbrains.kotlin:kotlin-stdlib:2.3.10"
-    
-    // دعم أندرويد الحديث
-    implementation "androidx.core:core-ktx:1.15.0"
-    implementation "androidx.multidex:multidex:2.0.1"
 }
