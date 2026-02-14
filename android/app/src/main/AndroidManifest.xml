@@ -3,15 +3,28 @@
     package="com.example.music_download_app">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+        tools:ignore="ScopedStorage" />
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:label="Liquid Snap"
-        android:name="android.app.Application" 
-        android:icon="@android:drawable/sym_def_app_icon"
-        android:usesCleartextTraffic="true">
-
+        android:name="android.app.Application"
+        android:icon="@android:drawable/sym_def_app_icon" 
+        android:roundIcon="@android:drawable/sym_def_app_icon"
+        android:usesCleartextTraffic="true"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:requestLegacyExternalStorage="true"
+        android:theme="@style/LaunchTheme"
+        tools:replace="android:label">
+        
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
@@ -24,6 +37,7 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
+            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -44,5 +58,16 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="http" />
         </intent>
+        
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="*/*" />
+        </intent>
     </queries>
+
 </manifest>
